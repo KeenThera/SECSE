@@ -20,7 +20,6 @@ from scoring.docking_score_prediction import prepare_files
 from evaluate.vina_docking import dock_by_py_vina
 import time
 
-# Disable the unnecessary RDKit warnings
 rdkit.RDLogger.DisableLog("rdApp.*")
 
 
