@@ -1,18 +1,19 @@
 # **SECSE**
 
 ----------------------------
+
 ### SECSE: _**S**ystemic **E**volutionary **C**hemical **S**pace **E**xplorer_
 
 ![plot](docs/platform.jpg)
 
-Chemical Space exploration is a major task of the hit-finding process during the pursuit of novel chemical entities.
+Chemical space exploration is a major task of the hit-finding process during the pursuit of novel chemical entities.
 Compared with other screening technologies, computational de novo design has become a popular approach to overcome the
-limitation of current chemical libraries. Here, we reported a  _de novo_ design platform named systemic evolutionary
+limitation of current chemical libraries. Here, we reported a de novo design platform named systemic evolutionary
 chemical space explorer (SECSE). The platform was conceptually inspired by fragment-based drug design, that miniaturized
-a “lego-building” process within the pocket of a certain target. Generation of virtual hits was then turned into a
-mathematical searching problem. To optimize the searching output, human intelligence and deep learning were integrated.
-Application of SECSE against PHGDH, proved its potential in virtually finding novel and diverse small molecules that are
-attractive starting points for further validation.
+a “lego-building” process within the pocket of a certain target. The key of virtual hits generation was then turned into
+a computational search problem. To enhance search and optimization, human intelligence and deep learning were
+integrated. Application of SECSE against PHGDH, proved its potential in finding novel and diverse small molecules that
+are attractive starting points for further validation.
 
 ### Tutorials and Usage
 
