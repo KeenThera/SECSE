@@ -8,7 +8,7 @@
 
 Chemical space exploration is a major task of the hit-finding process during the pursuit of novel chemical entities.
 Compared with other screening technologies, computational _de novo_ design has become a popular approach to overcome the
-limitation of current chemical libraries. Here, we reported a de novo design platform named systemic evolutionary
+limitation of current chemical libraries. Here, we reported a _de novo_ design platform named systemic evolutionary
 chemical space explorer (SECSE). The platform was conceptually inspired by fragment-based drug design, that miniaturized
 a “lego-building” process within the pocket of a certain target. The key of virtual hits generation was then turned into
 a computational search problem. To enhance search and optimization, human intelligence and deep learning were
@@ -83,6 +83,9 @@ numpy~=1.20.3, pandas~=1.3.3, pandarallel~=1.5.2, tqdm~=4.62.2, biopandas~=0.2.9
 chemprop~=1.3.1, torch~=1.9.0+cu111
 
 ### Citation
+
+Lu, C.; Liu, S.; Shi, W.; Yu, J.; Zhou, Z.; Zhang, X.; Lu, X.; Cai, F.; Xia, N.; Wang, Y. Systemic Evolutionary Chemical
+Space Exploration For Drug Discovery. ChemRxiv 2021. This content is a preprint and has not been peer-reviewed.
 
 -------
 
