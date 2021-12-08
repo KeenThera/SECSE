@@ -79,6 +79,13 @@ further validation.
 ### Dependencies
 
 -------
+GNU Parallel installation  
+- CentOS / RHEL  
+`yum install parallel`  
+- Ubuntu / Debian  
+`sudo apt install parallel`
+- From source: https://www.gnu.org/software/parallel/
+
 numpy~=1.20.3, pandas~=1.3.3, pandarallel~=1.5.2, tqdm~=4.62.2, biopandas~=0.2.9, openbabel~=3.1.1, rdkit~=2021.03.5,
 chemprop~=1.3.1, torch~=1.9.0+cu111
 
