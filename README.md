@@ -31,6 +31,7 @@ further validation.
    `chmod -R +X path/to/SECSE`
 3. Input fragments: a tab split _.smi_ file without header. See demo [here](demo/demo_1020.smi).
 4. Parameters in config file:  
+
    [DEFAULT]
     - _workdir_, working directory, create if not exists, otherwise overwrite, type=str
     - _fragments_, file path to seed fragments, smi format, type=str
@@ -71,9 +72,9 @@ further validation.
     - _rigid_body_num_, default=2, type=int
 
    Config file of a demo case [phgdh_demo_vina.ini](demo/phgdh_demo_vina.ini)
-5. Run SECSE  
+6. Run SECSE  
    `python $SECSE/run_secse.py --config path/to/config`
-6. Output files
+7. Output files
     - merged_docked_best_timestamp_with_grow_path.csv: selected molecules and growing path
     - selected.sdf: 3D conformers of all selected molecules
 
@@ -95,7 +96,7 @@ chemprop~=1.3.1, torch~=1.9.0+cu111
 -------
 Lu, C.; Liu, S.; Shi, W.; Yu, J.; Zhou, Z.; Zhang, X.; Lu, X.; Cai, F.; Xia, N.; Wang, Y. Systemic Evolutionary Chemical
 Space Exploration For Drug Discovery. ChemRxiv 2021. This content is a preprint and has not been peer-reviewed.
-
+ https://doi.org/10.26434/chemrxiv-2021-tdg7f
 ### License
 
 -------

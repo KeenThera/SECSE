@@ -9,7 +9,7 @@ import os
 import pandas as pd
 from rdkit import Chem
 
-FILTER_FILE = "Structure Filter_20211015_v1.12.xlsx"
+FILTER_FILE = "Structure Filter_20211015_v1.12.xls"
 
 
 class StructureFilter:

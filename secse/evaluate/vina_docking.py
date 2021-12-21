@@ -52,7 +52,7 @@ def check_mols(workdir):
             with open(pdb_path, "r") as pdb:
                 for line in pdb.readlines():
                     if line.startswith("REMARK VINA RESULT"):
-                        score = line.split("   ")[1].replace(" ", "")
+                        score = line.split(":")[1][:10].replace(" ", "")
                         with open(sdf_path, "a") as sdf:
                             newline = "\n".join(["> <docking score>", score, "\n$$$$\n"])
                             sdf.write(newline)
