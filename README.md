@@ -20,13 +20,13 @@ further validation.
 ----------------------------
 
 1. Set Environment Variables  
-   `export $SECSE=path/to/SECSE`  
+   `export SECSE=path/to/SECSE`  
    if you use AutoDock Vina for docking:
    [(download here)](https://github.com/ccsb-scripps/AutoDock-Vina/releases)  
-   `export $VINA=path/to/AutoDockVINA`  
+   `export VINA=path/to/AutoDockVINA`  
    if you use [Gilde](https://www.schrodinger.com/products/glide) for docking (additional installation & license
    required):  
-   `export $SCHRODINGER=path/to/SCHRODINGER`
+   `export SCHRODINGER=path/to/SCHRODINGER`
 2. Give execution permissions to the SECSE directory  
    `chmod -R +X path/to/SECSE`
 3. Input fragments: a tab split _.smi_ file without header. See demo [here](demo/demo_1020.smi).
