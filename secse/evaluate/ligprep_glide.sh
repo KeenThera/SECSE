@@ -4,14 +4,13 @@ workdir=${2}
 target=${3}
 generation=${4}
 docking_precision=${5}
+cpu_num=${6}
 #docking_precision=SP
 #docking_precision=XP
 #docking_precision=HTVS
 ligprep_in=ligprep_gen_$generation.inp
 glide_in=glide_gen_$generation.in
 glide_mae=ligprep_gen_$generation.maegz
-cpu=$(grep -c ^processor /proc/cpuinfo)
-#
 
 cd "$workdir" || exit
 
@@ -31,7 +30,7 @@ IGNORE_CHIRALITIES  no
 NUM_STEREOISOMERS 8
 EOF
 
-"${SCHRODINGER}/ligprep" -inp $ligprep_in -HOST "localhost:$cpu" -TMPDIR "$workdir" -WAIT
+"${SCHRODINGER}/ligprep" -inp $ligprep_in -HOST "localhost:$cpu_num" -TMPDIR "$workdir" -WAIT
 
 # generate glide input file
 cat >"$glide_in" <<EOF
@@ -57,6 +56,6 @@ fi
 echo "Run glide ..."
 
 # Docking
-"${SCHRODINGER}/glide" "$glide_in" -OVERWRITE -adjust -HOST "localhost:$cpu" -TMPDIR "$workdir" -WAIT
+"${SCHRODINGER}/glide" "$glide_in" -OVERWRITE -adjust -HOST "localhost:$cpu_num" -TMPDIR "$workdir" -WAIT
 
 echo "Finshing docking of genration $generation !"

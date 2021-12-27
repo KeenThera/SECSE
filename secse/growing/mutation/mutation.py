@@ -14,7 +14,7 @@ from rdkit.Chem import rdChemReactions
 from uitilities.wash_mol import get_bridged_atoms, neutralize_atoms
 
 rdkit.RDLogger.DisableLog("rdApp.*")
-pandarallel.initialize(verbose=0)
+
 
 RULE_DB = os.path.join(os.getenv("SECSE"), "growing/mutation/rules_demo.db")
 
@@ -161,7 +161,7 @@ class Mutation:
         self.out_product_smiles = []
 
 
-def mutation_df(df: pd.DataFrame, workdir, gen=1):
+def mutation_df(df: pd.DataFrame, workdir, cpu_num, gen=1):
     workdir = os.path.join(workdir, "generation_" + str(gen))
     mutation = Mutation(5000, workdir)
 
@@ -179,6 +179,7 @@ def mutation_df(df: pd.DataFrame, workdir, gen=1):
         mut_df["smiles_gen_" + str(gen)] = mut_df["smiles_gen_" + str(gen - 1)].apply(
             lambda x: mutation_per_row(mutation, x))
     else:
+        pandarallel.initialize(verbose=0, nb_workers=cpu_num)
         mut_df["smiles_gen_" + str(gen)] = mut_df["smiles_gen_" + str(gen - 1)].parallel_apply(
             lambda x: mutation_per_row(mutation, x))
     mut_df = mut_df.dropna(subset=["smiles_gen_" + str(gen)]).reset_index(drop=True)

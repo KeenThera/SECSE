@@ -11,8 +11,8 @@ import subprocess
 GLIDE_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_glide.sh")
 
 
-def dock_by_glide(workdir, mols_smi, target, gen, dock_mode):
-    ligprep_glide = [GLIDE_SHELL, mols_smi, workdir, target, str(gen), dock_mode]
+def dock_by_glide(workdir, mols_smi, target, gen, dock_mode, cpu_num):
+    ligprep_glide = [GLIDE_SHELL, mols_smi, workdir, target, str(gen), dock_mode, str(cpu_num)]
     print(" ".join(ligprep_glide))
     subprocess.check_output(" ".join(ligprep_glide), shell=True, stderr=subprocess.STDOUT)
     glide_out = os.path.join(workdir, "glide_gen_{}_lib.sdf".format(gen))

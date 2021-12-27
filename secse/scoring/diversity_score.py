@@ -13,8 +13,6 @@ from rdkit.Chem import AllChem, rdFMCS
 from rdkit import Chem
 from pandarallel import pandarallel
 
-pandarallel.initialize(verbose=0)
-
 
 def cal_morgan_fp(smi):
     mol = Chem.MolFromSmiles(smi)
@@ -28,8 +26,9 @@ def tanimoto_smi(fp1, fp2):
     return rdkit.DataStructs.cDataStructs.TanimotoSimilarity(fp1, fp2)
 
 
-def clustering(df: pd.DataFrame, smi, gen, k=500):
+def clustering(df: pd.DataFrame, smi, gen, cpu_num, k=500):
     df = df.reset_index(drop=True)
+    pandarallel.initialize(verbose=0, nb_workers=cpu_num)
     df["fp2"] = df[smi].parallel_apply(cal_morgan_fp)
     df = df.dropna(subset=["fp2"])
     c = df["fp2"].sample(1)

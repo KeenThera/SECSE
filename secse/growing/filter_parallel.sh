@@ -7,6 +7,7 @@ SECONDS=0
 workdir=${1}
 gen=${2}
 config=${3}
+cpu_num=${4}
 script=$SECSE/growing/filter.py
 files=$RANDOM
 cd "${workdir}"/generation_split_by_seed || exit
@@ -16,7 +17,7 @@ done >$files
 
 mkdir -p ../filter_flag
 # filter default
-parallel --bar -I {} -a ${files} -C ";" python "$script"
+parallel --jobs "$cpu_num" --bar -I {} -a ${files} -C ";" python "$script"
 rm $files
 cd "${workdir}"/filter_flag || exit
 for i in *.csv; do

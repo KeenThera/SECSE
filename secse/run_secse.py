@@ -18,6 +18,7 @@ def main():
 
     parser.add_argument("--config", help="path of config file", default=False)
     args = parser.parse_args()
+
     try:
         # config file given
         config = configparser.ConfigParser()
@@ -28,6 +29,7 @@ def main():
         num_per_gen = config.getint("DEFAULT", "num_per_gen")
         start_gen = config.getint("DEFAULT", "start_gen")
         docking_program = config.get("DEFAULT", "docking_program")
+        cpu_num = config.getint("DEFAULT", "cpu")
 
         receptor = config.get("docking", "target")
         dl_mode = config.getint("deep learning", "mode")
@@ -46,10 +48,10 @@ def main():
 
     if "vina" in docking_program.lower():
         workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor,
-                        start_gen, dl_mode, args.config, x, y, z, box_size_x, box_size_y, box_size_z)
+                        start_gen, dl_mode, args.config, cpu_num, x, y, z, box_size_x, box_size_y, box_size_z)
     else:
         workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
-                        args.config)
+                        args.config, cpu_num=cpu_num)
     workflow.grow()
     write_growth(num_gen, workdir, dl_mode, args.config)
 

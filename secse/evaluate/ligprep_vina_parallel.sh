@@ -14,6 +14,7 @@ z=${6}
 box_size_x=${7}
 box_size_y=${8}
 box_size_z=${9}
+cpu_num=${10}
 files=$RANDOM
 script=$SECSE/evaluate/ligprep.py
 split_dir=$workdir/docking_split
@@ -29,7 +30,7 @@ split -l 100 -d "$smi" "$split_dir"/part --additional-suffix ".smi"
 
 # run ligprep
 cd "$split_dir" || exit
-find . -name "*smi" | parallel --bar python "$script" "$workdir"
+find . -name "*smi" | parallel --jobs "$cpu_num" --bar python "$script" "$workdir"
 
 # write vina config file
 cat >"$conf" <<EOF
@@ -57,10 +58,10 @@ for i in *pdbqt; do
 done >$files
 
 # ignore Vina stdout
-parallel --bar -I {} -a ${files} -C ";" "$VINA" --config "$conf" --ligand {1} --out {2} >/dev/null
+parallel --jobs "$cpu_num" --bar -I {} -a ${files} -C ";" "$VINA" --config "$conf" --ligand {1} --out {2} >/dev/null
 rm $files
 
-find "$vina_dir" -name "*pdbqt" | parallel obabel -ipdbqt {} -O "$pdb_dir"/{/.}-dp.pdb -m &>/dev/null
+find "$vina_dir" -name "*pdbqt" | parallel --jobs "$cpu_num" obabel -ipdbqt {} -O "$pdb_dir"/{/.}-dp.pdb -m &>/dev/null
 
 duration=$SECONDS
 echo "Docking runtime: $((duration / 60)) minutes $((duration % 60)) seconds."

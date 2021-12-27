@@ -17,8 +17,9 @@ sys.path.append(os.getenv("SECSE"))
 VINA_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_vina_parallel.sh")
 
 
-def dock_by_py_vina(workdir, smi, receptor, x, y, z, box_size_x=20, box_size_y=20, box_size_z=20):
-    cmd = " ".join(list(map(str, [VINA_SHELL, workdir, smi, receptor, x, y, z, box_size_x, box_size_y, box_size_z])))
+def dock_by_py_vina(workdir, smi, receptor, cpu_num, x, y, z, box_size_x=20, box_size_y=20, box_size_z=20):
+    cmd = " ".join(
+        list(map(str, [VINA_SHELL, workdir, smi, receptor, x, y, z, box_size_x, box_size_y, box_size_z, cpu_num])))
     print(cmd)
     subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
     # modify output sdf

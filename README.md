@@ -30,7 +30,7 @@ further validation.
 2. Give execution permissions to the SECSE directory  
    `chmod -R +X path/to/SECSE`
 3. Input fragments: a tab split _.smi_ file without header. See demo [here](demo/demo_1020.smi).
-4. Parameters in config file:  
+4. Parameters in config file:
 
    [DEFAULT]
     - _workdir_, working directory, create if not exists, otherwise overwrite, type=str
@@ -41,6 +41,7 @@ further validation.
     - _start_gen_, number of staring generation, default=0, type=int
     - _docking_program_, name of docking program, AutoDock-Vina (input vina) or Glide (input glide) , default=vina,
       type=str
+    - _cpu_, number of max invoke CPUs, type=int
 
    [docking]
     - _target_, protein PDBQT if use AutoDock Vina; Grid file if choose Glide, type=str
@@ -81,11 +82,12 @@ further validation.
 ### Dependencies
 
 -------
-GNU Parallel installation  
+GNU Parallel installation
+
 - CentOS / RHEL  
-`yum install parallel`  
+  `yum install parallel`
 - Ubuntu / Debian  
-`sudo apt install parallel`
+  `sudo apt install parallel`
 - From source: https://www.gnu.org/software/parallel/
 
 numpy~=1.20.3, pandas~=1.3.3, pandarallel~=1.5.2, tqdm~=4.62.2, biopandas~=0.2.9, openbabel~=3.1.1, rdkit~=2021.03.5,
@@ -96,7 +98,8 @@ chemprop~=1.3.1, torch~=1.9.0+cu111
 -------
 Lu, C.; Liu, S.; Shi, W.; Yu, J.; Zhou, Z.; Zhang, X.; Lu, X.; Cai, F.; Xia, N.; Wang, Y. Systemic Evolutionary Chemical
 Space Exploration For Drug Discovery. ChemRxiv 2021. This content is a preprint and has not been peer-reviewed.
- https://doi.org/10.26434/chemrxiv-2021-tdg7f
+https://doi.org/10.26434/chemrxiv-2021-tdg7f
+
 ### License
 
 -------

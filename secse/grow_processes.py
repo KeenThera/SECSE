@@ -25,11 +25,13 @@ rdkit.RDLogger.DisableLog("rdApp.*")
 
 class Grow(object):
     def __init__(self, generation, mols_smi, workdir, num_per_gen, docking_program,
-                 receptor, start_gen, dl_mode, config_path, x=0, y=0, z=0, box_size_x=0, box_size_y=0, box_size_z=0):
+                 receptor, start_gen, dl_mode, config_path,
+                 cpu_num=0, x=0, y=0, z=0, box_size_x=0, box_size_y=0, box_size_z=0):
         self.mols_smi = mols_smi
         self.total_generation = int(generation)
         self.workdir = workdir
         self.num_per_gen = num_per_gen
+        self.cpu_num = cpu_num
 
         self.target = receptor
         self.x = x
@@ -70,7 +72,7 @@ class Grow(object):
 
     def docking_vina(self, step):
         print("Step {}: Docking with Autodock Vina ...".format(step))
-        dock_by_py_vina(self.workdir_now, self.mols_smi, self.target, self.x, self.y, self.z,
+        dock_by_py_vina(self.workdir_now, self.mols_smi, self.target, self.cpu_num, self.x, self.y, self.z,
                         self.box_size_x, self.box_size_y, self.box_size_z)
 
     def docking_glide(self, step):
@@ -80,7 +82,7 @@ class Grow(object):
             dock_mode = "SP"
         else:
             dock_mode = "HTVS"
-        dock_by_glide(self.workdir_now, self.mols_smi, self.target, self.gen, dock_mode)
+        dock_by_glide(self.workdir_now, self.mols_smi, self.target, self.gen, dock_mode, self.cpu_num)
 
     def ranking_docked_mols(self, step=2):
         print("Step {}: Ranking docked molecules...".format(str(step)))
@@ -154,7 +156,7 @@ class Grow(object):
 
             self._generation_dir = os.path.join(self.workdir_now, "generation_split_by_seed")
             self.winner_df = self.winner_df.reset_index(drop=True)
-            header = mutation_df(self.winner_df, self.workdir, self.gen)
+            header = mutation_df(self.winner_df, self.workdir, self.cpu_num, self.gen)
             generation_path = os.path.join(self.workdir_now, "generation")
 
             cmd_cat = "cat {} > {}".format(os.path.join(self.workdir_now, "mutation.csv"),
@@ -170,7 +172,7 @@ class Grow(object):
             print("Step 2: Filtering all mutated mols")
             time1 = time.time()
             cmd_filter = ["sh", os.path.join(os.getenv("SECSE"), "growing", "filter_parallel.sh"), self.workdir_now,
-                          str(self.gen), self.config_path]
+                          str(self.gen), self.config_path, str(self.cpu_num)]
             cmd_filter = " ".join(cmd_filter)
             print(cmd_filter)
             subprocess.check_output(cmd_filter, shell=True, stderr=subprocess.STDOUT)
@@ -223,7 +225,8 @@ class Grow(object):
                 print("Step 4: Clustering")
                 # clustering
                 num_clusters = int(self.num_per_gen / 5)
-                self._sampled_df = clustering(self._sampled_df, "smiles_gen_" + str(self.gen), self.gen, num_clusters)
+                self._sampled_df = clustering(self._sampled_df, "smiles_gen_" + str(self.gen), self.gen, self.cpu_num,
+                                              num_clusters)
 
                 # sample enough mol
                 self._dock_df = self._sampled_df.sort_values("cluster_center_dis_gen_" + str(self.gen)).groupby(
