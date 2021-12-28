@@ -28,7 +28,7 @@ further validation.
    required):  
    `export SCHRODINGER=path/to/SCHRODINGER`
 2. Give execution permissions to the SECSE directory  
-   `chmod -R +X path/to/SECSE`
+   `chmod -R +x path/to/SECSE`
 3. Input fragments: a tab split _.smi_ file without header. See demo [here](demo/demo_1020.smi).
 4. Parameters in config file:
 
@@ -85,13 +85,15 @@ further validation.
 GNU Parallel installation
 
 - CentOS / RHEL  
-  `yum install parallel`
+  `sudo yum install parallel`
 - Ubuntu / Debian  
-  `sudo apt install parallel`
+  `sudo apt-get install parallel`
 - From source: https://www.gnu.org/software/parallel/
 
 numpy~=1.20.3, pandas~=1.3.3, pandarallel~=1.5.2, tqdm~=4.62.2, biopandas~=0.2.9, openbabel~=3.1.1, rdkit~=2021.03.5,
 chemprop~=1.3.1, torch~=1.9.0+cu111
+
+Linux server with CPUs only also works.
 
 ### Citation
 
