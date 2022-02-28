@@ -10,20 +10,20 @@ import rdkit
 from pandarallel import pandarallel
 from rdkit import Chem
 from rdkit.Chem import rdChemReactions
-
 from uitilities.wash_mol import get_bridged_atoms, neutralize_atoms
+from uitilities.load_rules import json_to_DB
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 
-
-RULE_DB = os.path.join(os.getenv("SECSE"), "growing/mutation/rules_demo.db")
+RULE_DB = os.path.join(os.getenv("SECSE"), "growing/mutation/rules_tmp_2022_0218.db")
 
 
 class Mutation:
 
-    def __init__(self, num, workdir):
+    def __init__(self, num, workdir, rule_db=RULE_DB):
         # self.load_reaction()
         self.workdir = workdir
+        self.rule_db = rule_db
         # self.load_buildingblock(num=num)
         self.rules_dict = {}
         self.load_common_rules()
@@ -43,7 +43,25 @@ class Mutation:
                       ]
         rules_dict = {}
         for table in tables:
-            sql = 'select * from "{0}"'.format(table)
+            try:
+                sql = 'select * from "{0}"'.format(table)
+                conn = sqlite3.connect(self.rule_db)
+                conn.row_factory = sqlite3.Row
+                c = conn.cursor()
+                c.execute(sql)
+                rs = c.fetchall()
+                for row in rs:
+                    row = dict(row)
+                    rules_dict[row["Rule ID"]] = (rdChemReactions.ReactionFromSmarts(row["SMARTS"]), row['Priority'])
+            except sqlite3.OperationalError:
+                print("No rule class: ", table)
+                pass
+        self.rules_dict.update(rules_dict)
+
+    def load_spacer_rings_rules(self):
+        rules_dict = {}
+        try:
+            sql = 'select * from "{}"'.format("G-002")
             conn = sqlite3.connect(RULE_DB)
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
@@ -51,22 +69,11 @@ class Mutation:
             rs = c.fetchall()
             for row in rs:
                 row = dict(row)
-                rules_dict[row["Rule ID"]] = (rdChemReactions.ReactionFromSmarts(row["SMARTS"]), row['Priority'])
-        self.rules_dict.update(rules_dict)
-
-    def load_spacer_rings_rules(self):
-        rules_dict = {}
-        sql = 'select * from "{}"'.format("G-002")
-        conn = sqlite3.connect(RULE_DB)
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        c.execute(sql)
-        rs = c.fetchall()
-        for row in rs:
-            row = dict(row)
-            pri = int(row['Spacer Priority']) * int(row['Ring Priority'])
-            rules_dict[row["Rule ID"]] = (rdChemReactions.ReactionFromSmarts(row["SMARTS"]), str(pri))
-        self.rules_dict.update(rules_dict)
+                pri = int(row['Spacer Priority']) * int(row['Ring Priority'])
+                rules_dict[row["Rule ID"]] = (rdChemReactions.ReactionFromSmarts(row["SMARTS"]), str(pri))
+            self.rules_dict.update(rules_dict)
+        except sqlite3.OperationalError:
+            print("No rule class: G-002")
 
     # set smiles
     def load_mol(self, input_smiles):
@@ -161,9 +168,13 @@ class Mutation:
         self.out_product_smiles = []
 
 
-def mutation_df(df: pd.DataFrame, workdir, cpu_num, gen=1):
+def mutation_df(df: pd.DataFrame, workdir, cpu_num, gen=1, rule_db=None):
     workdir = os.path.join(workdir, "generation_" + str(gen))
-    mutation = Mutation(5000, workdir)
+
+    if rule_db is None:
+        mutation = Mutation(5000, workdir)
+    else:
+        mutation = Mutation(5000, workdir, rule_db=rule_db)
 
     def mutation_per_row(mut: Mutation, smi):
         # mutation for each seed molecule

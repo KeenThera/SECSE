@@ -1,0 +1,22 @@
+[
+    {
+        "Rule ID": "G-001-0020",
+        "SMARTS": "[c,CR0;!H0:1]>>[*:1]C1OC(NC1)=O",
+        "Priority": 3
+    },
+    {
+        "Rule ID": "G-001-0028",
+        "SMARTS": "[c,CR0,n,N,O,S;!H0:1]>>[*:1]c1ccccc1",
+        "Priority": 3
+    },
+    {
+        "Rule ID": "G-001-0063",
+        "SMARTS": "[c,CR0,n,N,O,S;!H0:1]>>[*:1]c1ocnc1",
+        "Priority": 3
+    },
+    {
+        "Rule ID": "G-001-0069",
+        "SMARTS": "[c,CR0,n,N,O,S;!H0:1]>>[*:1]c1n[nH]cc1",
+        "Priority": 3
+    }
+]

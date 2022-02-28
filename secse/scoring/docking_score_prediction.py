@@ -25,6 +25,7 @@ def get_train(sdf, dock):
 
     g_smi = pd.read_csv(dock, sep="\t", header=None)
     g_smi.columns = ["Smiles", "ID"]
+    g_smi = g_smi.drop_duplicates(subset="ID")
     g_smi = g_smi.set_index("ID")
 
     g = g[["ID", "Molecule", "docking score"]]

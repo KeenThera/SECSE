@@ -17,7 +17,9 @@ from growing.mutation.mutation import mutation_df
 from scoring.ranking import Ranking
 from scoring.diversity_score import clustering
 from scoring.docking_score_prediction import prepare_files
-from evaluate.vina_docking import dock_by_py_vina
+from scoring.sampling import sample_by_similarity, sample_by_rule_weight
+from evaluate.docking import dock_by_py_vina, dock_by_py_autodock_gpu
+from uitilities.load_rules import json_to_DB
 import time
 
 rdkit.RDLogger.DisableLog("rdApp.*")
@@ -26,12 +28,13 @@ rdkit.RDLogger.DisableLog("rdApp.*")
 class Grow(object):
     def __init__(self, generation, mols_smi, workdir, num_per_gen, docking_program,
                  receptor, start_gen, dl_mode, config_path,
-                 cpu_num=0, x=0, y=0, z=0, box_size_x=0, box_size_y=0, box_size_z=0):
+                 cpu_num=0, gpu_num=1, rule_db=0, x=0, y=0, z=0, box_size_x=0, box_size_y=0, box_size_z=0):
         self.mols_smi = mols_smi
         self.total_generation = int(generation)
         self.workdir = workdir
         self.num_per_gen = num_per_gen
         self.cpu_num = cpu_num
+        self.gpu_num = gpu_num
 
         self.target = receptor
         self.x = x
@@ -46,6 +49,15 @@ class Grow(object):
         self.dl_mode = dl_mode
 
         self.config_path = config_path
+
+        if rule_db == 0:
+            self.rule_db = None
+        elif str(rule_db).endswith("json"):
+            os.makedirs(self.workdir, exist_ok=True)
+            self.rule_db = os.path.join(self.workdir, "rules.db")
+            json_to_DB(rule_db, self.rule_db)
+        else:
+            raise Exception("Please check your input rule file.")
 
         self.lig_sdf = None
         self.winner_df = None
@@ -64,11 +76,17 @@ class Grow(object):
             self.docking_vina(step)
         elif "glide" in self.docking_program:
             self.docking_glide(step)
+        elif "autodock-gpu" in self.docking_program:
+            self.docking_autodock_gpu(step)
 
         # ranking and find top fragments
         self.lig_sdf = os.path.join(self.workdir_now, "docking_outputs_with_score.sdf")
         end = time.time()
         print("Docking time cost: {} min.".format(round((end - start) / 60, 2)))
+
+    def docking_autodock_gpu(self, step):
+        print("Step {}: Docking with AutoDock GPU ...".format(step))
+        dock_by_py_autodock_gpu(self.workdir_now, self.mols_smi, self.target, self.cpu_num, self.gpu_num)
 
     def docking_vina(self, step):
         print("Step {}: Docking with Autodock Vina ...".format(step))
@@ -133,11 +151,18 @@ class Grow(object):
         print("\n{}\nInput fragment file: {}".format("*" * 66, self.mols_smi))
         print("Target grid file: {}".format(self.target))
         print("Workdir: {}\n".format(self.workdir))
+        print("\n", "*" * 50, "\nGeneration ", str(self.gen), "...")
         # generation 0 : 1.evaluate; 2.ranking
         self.workdir_now = os.path.join(self.workdir, "generation_" + str(self.gen))
         step = 1
         self.docking_sh(step)
         step += 1
+        if self.gen > 2 and self.dl_mode == 1:
+            try:
+                self.dl_pre(step)
+                step += 1
+            except:
+                pass
         self.ranking_docked_mols(step)
 
         # next generations: 1.copy best mols from last generation as seed; 2.mutation; 3.filter; 4. sampling;
@@ -156,7 +181,7 @@ class Grow(object):
 
             self._generation_dir = os.path.join(self.workdir_now, "generation_split_by_seed")
             self.winner_df = self.winner_df.reset_index(drop=True)
-            header = mutation_df(self.winner_df, self.workdir, self.cpu_num, self.gen)
+            header = mutation_df(self.winner_df, self.workdir, self.cpu_num, self.gen, self.rule_db)
             generation_path = os.path.join(self.workdir_now, "generation")
 
             cmd_cat = "cat {} > {}".format(os.path.join(self.workdir_now, "mutation.csv"),
@@ -191,37 +216,8 @@ class Grow(object):
             else:
                 # sampling
                 print("Step 3: Sampling")
-
-                if "G-002" in list(self._filter_df["type"]):
-                    # control ratio of G-002 mutation
-                    spacer_df = self._filter_df[self._filter_df["type"] == "G-002"]
-
-                    common_df = self._filter_df.drop(spacer_df.index, axis=0)
-                    # control ratio of ring with spacer based on different stage
-                    if self.gen <= 3:
-                        spacer_ratio = 0.3
-                    elif self.gen <= 7:
-                        spacer_ratio = 0.1
-                    else:
-                        spacer_ratio = 0.01
-                    sample_size = min(self._filter_df.shape[0], 500000)
-
-                    spacer_df = spacer_df.sample(min(int(sample_size * spacer_ratio), spacer_df.shape[0]),
-                                                 replace=False,
-                                                 weights="priority_gen_" + str(self.gen))
-
-                    common_df = common_df.sample(min(int(sample_size * (1 - spacer_ratio)), common_df.shape[0]),
-                                                 replace=False,
-                                                 weights="priority_gen_" + str(self.gen))
-                    self._sampled_df = pd.concat([spacer_df, common_df], axis=0)
-                    self._sampled_df.to_csv(os.path.join(self.workdir_now, "sampled.csv"), index=False)
-                else:
-                    print("No cmpds generated from ring with spacer in the generation!")
-                    self._sampled_df = self._filter_df.sample(min(self._filter_df.shape[0], 500000),
-                                                              replace=False,
-                                                              weights="priority_gen_" + str(self.gen))
-                    self._sampled_df.to_csv(os.path.join(self.workdir_now, "sampled.csv"), index=False)
-
+                self._sampled_df = sample_by_rule_weight(self.gen, self._filter_df, self.workdir_now)
+                # self._sampled_df = sample_by_similarity(self.gen, self._filter_df, self.workdir_now, self.num_per_gen)
                 print("Step 4: Clustering")
                 # clustering
                 num_clusters = int(self.num_per_gen / 5)
@@ -236,11 +232,12 @@ class Grow(object):
             self.mols_smi = os.path.join(self.workdir_now, "mols_for_docking.smi")
             self._dock_df[["smiles_gen_" + str(self.gen), "id_gen_" + str(self.gen)]].to_csv(self.mols_smi, index=False,
                                                                                              header=False, sep="\t")
+
             # evaluate
             step = 5
             self.docking_sh(step)
-            # deep learning model
-            if self.dl_mode == 1:
+            # run deep learning model, when ( dl_mode is 1) & (not all generated compounds were docked)
+            if (self.dl_mode == 1) and (self._filter_df.shape[0] > self._dock_df.shape[0]):
                 step += 1
                 self.dl_pre(step)
             # ranking

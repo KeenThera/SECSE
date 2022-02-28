@@ -15,7 +15,7 @@ sys.path.append(os.getenv("SECSE"))
 
 import rdkit.Chem as Chem
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt, CalcNumHBD, CalcNumHBA
-from rdkit.Chem import Descriptors
+from rdkit.Chem import Descriptors, AllChem
 import json
 
 from uitilities.ring_tool import RingSystems
@@ -191,6 +191,9 @@ class Filter:
                 yield "Charge"
         else:
             yield "Charge"
+
+    def similarity_filter(self):
+        fp = AllChem.GetMorganFingerprintAsBitVect(self.mol, 2, 512)
 
 
 def mol_filter(molfilter: Filter, smi):

@@ -1,20 +1,16 @@
 #! /bin/bash
 # -*- coding:utf-8 _*-
 # @author: Lu Chong
-# @file: ligprep_vina_parallel.sh
-# @time: 2021/9/8/09:52
+# @file: ligprep_autodock_gpu.sh
+# @time: 2022/2/16/15:25
 
 SECONDS=0
 workdir=${1}
 smi=${2}
 receptor=${3}
-x=${4}
-y=${5}
-z=${6}
-box_size_x=${7}
-box_size_y=${8}
-box_size_z=${9}
-cpu_num=${10}
+cpu_num=${4}
+gpu_num=${5}
+
 files=$RANDOM
 script=$SECSE/evaluate/ligprep.py
 split_dir=$workdir/docking_split
@@ -22,7 +18,7 @@ docking_dir=$workdir/docking_poses
 lig_dir=$workdir/ligands_for_docking
 pdb_dir=$workdir/pdb_files
 sdf_dir=$workdir/sdf_files
-conf=$workdir/vina_config.txt
+
 cd "$workdir" || exit
 mkdir -p "$split_dir" "$docking_dir" "$lig_dir" "$pdb_dir" "$sdf_dir"
 # split by line
@@ -32,35 +28,22 @@ split -l 100 -d "$smi" "$split_dir"/part --additional-suffix ".smi"
 cd "$split_dir" || exit
 find . -name "*smi" | parallel --jobs "$cpu_num" --bar python "$script" "$workdir"
 
-# write vina config file
-cat >"$conf" <<EOF
-receptor = $receptor
-center_x =  $x
-center_y =  $y
-center_z =  $z
-
-size_x = $box_size_x
-size_y = $box_size_y
-size_z = $box_size_z
-
-seed = 12345
-cpu = 1
-num_modes = 3
-energy_range = 3
-exhaustiveness = 16
-verbosity = 0
-EOF
-
-# run vina
+# run autdock gpu
 cd "$lig_dir" || exit
 for i in *pdbqt; do
-  echo "$lig_dir/$i;$docking_dir/$i"
+  echo "$lig_dir/$i;$docking_dir/${i%.*}"
 done >$files
 
-# ignore Vina stdout
-parallel --jobs "$cpu_num" --bar -I {} -a ${files} -C ";" "$VINA" --config "$conf" --ligand {1} --out {2} >/dev/null
-rm $files
+parallel --jobs "$gpu_num" --bar -I {} -a ${files} -C ";" "$AUTODOCK_GPU/bin/autodock_gpu_128wi" --ffile "$receptor" --lfile {1} --resnam {2} --seed 12345 -D '$(({%}))' -x 0 -n 3 # >/dev/null
+#rm $files
 
+# covert dlg file to pdb
+cd "$docking_dir" || exit
+find . -name "*.dlg" | parallel "grep '^DOCKED' {} >{.}.tmp"
+find . -name "*.tmp" | parallel "cut -c9- {} >{.}.pdbqt"
+rm ./*.tmp
+
+sed -e "s/USER    Estimated Free Energy of Binding    =/REMARK/g" -i *pdbqt
 find "$docking_dir" -name "*pdbqt" | parallel --jobs "$cpu_num" obabel -ipdbqt {} -O "$pdb_dir"/{/.}-dp.pdb -m &>/dev/null
 
 duration=$SECONDS

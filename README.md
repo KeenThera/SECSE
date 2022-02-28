@@ -10,7 +10,7 @@ Chemical space exploration is a major task of the hit-finding process during the
 Compared with other screening technologies, computational _de novo_ design has become a popular approach to overcome the
 limitation of current chemical libraries. Here, we reported a _de novo_ design platform named systemic evolutionary
 chemical space explorer (SECSE). The platform was conceptually inspired by fragment-based drug design, that miniaturized
-a “lego-building” process within the pocket of a certain target. The key of virtual hits generation was then turned into
+a “lego-building” process within the pocket of a certain target. The key to virtual hits generation was then turned into
 a computational search problem. To enhance search and optimization, human intelligence and deep learning were
 integrated. SECSE has the potential in finding novel and diverse small molecules that are attractive starting points for
 further validation.
@@ -20,15 +20,18 @@ further validation.
 ----------------------------
 
 1. Set Environment Variables  
-   `export SECSE=path/to/SECSE`  
+   `export SECSE=/path/to/SECSE`  
    if you use AutoDock Vina for docking:
    [(download here)](https://github.com/ccsb-scripps/AutoDock-Vina/releases)  
-   `export VINA=path/to/AutoDockVINA`  
+   `export VINA=/path/to/AutoDockVINA`  
+   if AutoDock GPU: (adgpu-v1.5.3_linux_ocl_128wi)  
+   [(download here)](https://github.com/ccsb-scripps/AutoDock-GPU/releases)  
+   `export AUTODOCK_GPU=/path/to/AutoDockGPU`  
    if you use [Gilde](https://www.schrodinger.com/products/glide) for docking (additional installation & license
    required):  
-   `export SCHRODINGER=path/to/SCHRODINGER`
+   `export SCHRODINGER=/path/to/SCHRODINGER`
 2. Give execution permissions to the SECSE directory  
-   `chmod -R +x path/to/SECSE`
+   `chmod -R +x /path/to/SECSE`
 3. Input fragments: a tab split _.smi_ file without header. See demo [here](demo/demo_1020.smi).
 4. Parameters in config file:
 
@@ -42,9 +45,12 @@ further validation.
     - _docking_program_, name of docking program, AutoDock-Vina (input vina) or Glide (input glide) , default=vina,
       type=str
     - _cpu_, number of max invoke CPUs, type=int
+    - _gpu_, number of max invoke GPU for AutoDock GPU, type=int
+    - _rule_db_, path to customized rule in json format, input 0 if use default rule, default=0
 
    [docking]
-    - _target_, protein PDBQT if use AutoDock Vina; Grid file if choose Glide, type=str
+    - _target_, protein PDBQT if use AutoDock Vina; grid map files descriptor fld file if AutoDock GPU; Grid file if
+      choose Glide, type=str
     - _RMSD_, docking pose RMSD cutoff between children and parent, default=2, type=float
     - _delta_score_, decreased docking score cutoff between children and parent, default=-1.0, type=float
     - _score_cutoff_, default=-9, type=float
@@ -72,10 +78,12 @@ further validation.
     - _rotatable_bound_num_, maximum of rotatable bound, default=5, type=int
     - _rigid_body_num_, default=2, type=int
 
-   Config file of a demo case [phgdh_demo_vina.ini](demo/phgdh_demo_vina.ini)
-6. Run SECSE  
+   Config file of a demo case [phgdh_demo_vina.ini](demo/phgdh_demo_vina.ini)  
+   Customized rule json template [rules.json](demo/rules.json). Rule ID should be in the form G-001-XXXX, like
+   G-001-0001, G-001-0002, G-001-0003 ...
+5. Run SECSE  
    `python $SECSE/run_secse.py --config path/to/config`
-7. Output files
+6. Output files
     - merged_docked_best_timestamp_with_grow_path.csv: selected molecules and growing path
     - selected.sdf: 3D conformers of all selected molecules
 
@@ -106,3 +114,5 @@ https://doi.org/10.26434/chemrxiv-2021-tdg7f
 
 -------
 SECSE is released under [Apache License, Version 2.0](LICENSE.txt).
+
+Contact email: lu_chong@keenthera.com

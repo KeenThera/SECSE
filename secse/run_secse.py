@@ -30,6 +30,8 @@ def main():
         start_gen = config.getint("DEFAULT", "start_gen")
         docking_program = config.get("DEFAULT", "docking_program")
         cpu_num = config.getint("DEFAULT", "cpu")
+        gpu_num = config.getint("DEFAULT", "gpu")
+        rule_db = config.get("DEFAULT", "rule_db")
 
         receptor = config.get("docking", "target")
         dl_mode = config.getint("deep learning", "mode")
@@ -48,10 +50,18 @@ def main():
 
     if "vina" in docking_program.lower():
         workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor,
-                        start_gen, dl_mode, args.config, cpu_num, x, y, z, box_size_x, box_size_y, box_size_z)
-    else:
+                        start_gen, dl_mode, args.config, cpu_num=cpu_num, rule_db=rule_db, x=x, y=y, z=z,
+                        box_size_x=box_size_x, box_size_y=box_size_y, box_size_z=box_size_z)
+
+    elif "glide" in docking_program.lower():
         workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
-                        args.config, cpu_num=cpu_num)
+                        args.config, cpu_num=cpu_num, rule_db=rule_db)
+    elif "autodock-gpu" in docking_program.lower():
+        workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
+                        args.config, cpu_num=cpu_num, gpu_num=gpu_num, rule_db=rule_db)
+    else:
+        print("Please check your input docking program argument.")
+        return None
     workflow.grow()
     write_growth(num_gen, workdir, dl_mode, args.config)
 

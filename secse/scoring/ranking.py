@@ -55,12 +55,14 @@ class Ranking(object):
         self.docked_df = pd.DataFrame(None)
         self.diff = None
         self.score_min = None
+        self.winner = None
+        self.final_df = None
+        self.keep_mols = None
 
         self.load_sdf()
         if self.gen > 0:
             self.filter_rmsd_docking_score()
-        if self.gen == 0:
-            self.docked_df = self.docked_df.drop(columns=["molecule", "id_raw"])
+        self.cal_le_rank()
 
         self.size = min(config.getint("DEFAULT", "seed_per_gen"), self.docked_df.shape[0])
 
@@ -69,13 +71,10 @@ class Ranking(object):
             ["ID", "Molecule", "smiles", "docking score"]]
         raw_df["docking score"] = raw_df["docking score"].astype(float)
         raw_df = raw_df.sort_values(by="docking score", ascending=True)
-        raw_df["le_ln"] = raw_df.apply(
-            lambda x: x["docking score"] / Chem.MolFromSmiles(x["smiles"]).GetNumHeavyAtoms(),
-            axis=1)
 
         raw_df.columns = [i.lower() for i in list(raw_df.columns)]
 
-        self.docked_df = raw_df[["smiles", "id", "docking score", "le_ln", "molecule"]].copy()
+        self.docked_df = raw_df[["smiles", "id", "docking score", "molecule"]].copy()
         # assign new id for duplicates, with suffix -1, -2, ...
         name_groups = self.docked_df.groupby("id")["id"]
         suffix = name_groups.cumcount() + 1
@@ -84,16 +83,6 @@ class Ranking(object):
         self.docked_df["id"] = np.where(repeats > 1, self.docked_df['id'] + "-dp" + suffix.map(str),
                                         self.docked_df["id"])
 
-        self.docked_df = self.docked_df.sort_values("le_ln", ascending=True)
-
-        self.diff = self.docked_df["le_ln"].max() - self.docked_df[
-            "le_ln"].min()
-        self.score_min = self.docked_df["le_ln"].min()
-        self.docked_df["fitness"] = 1 - (
-                (self.docked_df["le_ln"] - self.score_min) / self.diff)
-        self.docked_df["fitness"] = self.docked_df["fitness"].fillna(-1)
-        self.docked_df["fitness_rank"] = self.docked_df["fitness"].rank(ascending=False)
-        self.docked_df["fitness_rank"] = self.docked_df["fitness_rank"].fillna(-1)
         print("{} cmpds after evaluate".format(self.docked_df.shape[0]))
 
     def load_parents_sdf(self):
@@ -143,6 +132,17 @@ class Ranking(object):
         self.docked_df = self.docked_df[(self.docked_df["delta_docking_score"] <= self.delta_docking_score) | (
                 (self.docked_df["rmsd"] <= self.RMSD) & (self.docked_df["delta_docking_score"] <= -0.2))]
         print("{} cmpds after RMSD/Docking Score fliter".format(self.docked_df.shape[0]))
+
+    def cal_le_rank(self):
+        # calculate ln LE and fitness rank
+        self.docked_df["le_ln"] = self.docked_df.apply(lambda x: x["docking score"] / x["molecule"].GetNumHeavyAtoms(),
+                                                       axis=1)
+        self.diff = self.docked_df["le_ln"].max() - self.docked_df["le_ln"].min()
+        self.score_min = self.docked_df["le_ln"].min()
+        self.docked_df["fitness"] = 1 - ((self.docked_df["le_ln"] - self.score_min) / self.diff)
+        self.docked_df["fitness"] = self.docked_df["fitness"].fillna(-1)
+        self.docked_df["fitness_rank"] = self.docked_df["fitness"].rank(ascending=False)
+        self.docked_df["fitness_rank"] = self.docked_df["fitness_rank"].fillna(-1)
         # drop molecule columns
         self.docked_df = self.docked_df.drop(columns=["molecule", "id_raw"])
 
