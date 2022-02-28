@@ -42,8 +42,8 @@ further validation.
     - _num_per_gen_, number of molecules generated each generation, type=int
     - _seed_per_gen_, number of selected seed molecules per generation, default=1000, type=int
     - _start_gen_, number of staring generation, default=0, type=int
-    - _docking_program_, name of docking program, AutoDock-Vina (input vina) or Glide (input glide) , default=vina,
-      type=str
+    - _docking_program_, name of docking program, AutoDock-Vina (input vina) or AutoDock-GPU (input autodock-gpu) or
+      Glide (input glide) , default=vina, type=str
     - _cpu_, number of max invoke CPUs, type=int
     - _gpu_, number of max invoke GPU for AutoDock GPU, type=int
     - _rule_db_, path to customized rule in json format, input 0 if use default rule, default=0
