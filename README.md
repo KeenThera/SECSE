@@ -24,7 +24,7 @@ further validation.
    if you use AutoDock Vina for docking:
    [(download here)](https://github.com/ccsb-scripps/AutoDock-Vina/releases)  
    `export VINA=/path/to/AutoDockVINA`  
-   if AutoDock GPU: (adgpu-v1.5.3_linux_ocl_128wi)  
+   if AutoDock GPU: (adgpu-v1.5.3_linux_ocl_128wi)
    [(download here)](https://github.com/ccsb-scripps/AutoDock-GPU/releases)  
    `export AUTODOCK_GPU=/path/to/AutoDockGPU`  
    if you use [Gilde](https://www.schrodinger.com/products/glide) for docking (additional installation & license
