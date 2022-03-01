@@ -9,7 +9,7 @@ import math
 import numpy as np
 import pandas as pd
 import rdkit
-from rdkit.Chem import AllChem, rdFMCS
+from rdkit.Chem import AllChem, rdFMCS, rdShapeHelpers
 from rdkit import Chem
 from pandarallel import pandarallel
 
@@ -24,6 +24,14 @@ def cal_morgan_fp(smi):
 
 def tanimoto_smi(fp1, fp2):
     return rdkit.DataStructs.cDataStructs.TanimotoSimilarity(fp1, fp2)
+
+
+def tanimoto_shape(ref, mol):
+    return 1 - rdShapeHelpers.ShapeTanimotoDist(ref, mol)
+
+
+def protrude_shape(ref, mol):
+    return 1 - rdShapeHelpers.ShapeProtrudeDist(ref, mol)
 
 
 def clustering(df: pd.DataFrame, smi, gen, cpu_num, k=500):
