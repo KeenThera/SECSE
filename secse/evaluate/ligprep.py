@@ -4,6 +4,7 @@
 @author: Liu Shien
 @file: ligprep.py
 @time: 2021/4/1/16:28
+@modiy: 2022/3/1/12:04
 """
 import argparse
 import os
@@ -76,7 +77,7 @@ def to_3D(mol):
         return None
 
 
-def gen_minimized_3D(path, rdmol, addH=True):
+def gen_minimized_3D(path, rdmol, numConformer=1, rms_cutoff=1, addH=True):
     name = rdmol.GetProp("_Name")
     sdf_path = os.path.join(path, name + ".sdf")
     writer = Chem.SDWriter(sdf_path)
@@ -84,7 +85,7 @@ def gen_minimized_3D(path, rdmol, addH=True):
         rdmol = Chem.AddHs(rdmol, addCoords=True)
 
     param = rdDistGeom.ETKDGv2()
-    param.pruneRmsThresh = 0.3
+    param.pruneRmsThresh = rms_cutoff
     cids = rdDistGeom.EmbedMultipleConfs(rdmol, 50, param)
     mp = AllChem.MMFFGetMoleculeProperties(rdmol, mmffVariant='MMFF94s')
     AllChem.MMFFOptimizeMoleculeConfs(rdmol, numThreads=0, mmffVariant='MMFF94s')
@@ -97,13 +98,25 @@ def gen_minimized_3D(path, rdmol, addH=True):
         res.append((cid, e))
     sorted_res = sorted(res, key=lambda x: x[1])
     rdMolAlign.AlignMolConformers(rdmol)
-    new = Chem.Mol(rdmol)
-    new.RemoveAllConformers()
-    min_conf = rdmol.GetConformer(sorted_res[0][0])
-    new.AddConformer(min_conf)
-
-    writer.write(new)
+    if len(sorted_res) > numConformer:
+        selected = numConformer
+    else:
+        selected = len(sorted_res)
+    # new = Chem.Mol(rdmol)
+    # new.RemoveAllConformers()
+    # min_conf = rdmol.GetConformer(sorted_res[0][0])
+    # new.AddConformer(min_conf)
+    for i in range(selected):
+        cid = sorted_res[i][0]
+        writer.write(rdmol, cid)
     writer.close()
+
+    return sdf_path
+
+
+def ionization(sdf_path):
+    path = os.path.dirname(sdf_path)
+    name = os.path.basename(sdf_path).split(".")[0]
     num = 0
     for mol in pybel.readfile("sdf", sdf_path):
         mol.removeh()
@@ -140,9 +153,10 @@ class LigPrep:
                 mol.SetProp("_Name", id1)
                 self.mol_dict[id1] = mol
 
-    def process(self):
-        # create a dir
-        path = os.path.join(self.workdir, "ligands_for_docking")
+    def process(self, des):
+        dirc_name = "ligands_for_" + des
+        path = os.path.join(self.workdir, dirc_name)
+        os.makedirs(path, exist_ok=True)
 
         self.parse_infile()
         for gid in self.mol_dict:
@@ -157,7 +171,11 @@ class LigPrep:
             for newmol in mytau:
                 if newmol is not None:
                     try:
-                        gen_minimized_3D(path, newmol)
+                        if des == 'docking':
+                            sdf_path = gen_minimized_3D(path, newmol)
+                            ionization(sdf_path)
+                        if des == 'shape':
+                            gen_minimized_3D(path, newmol, 10)
                     except Exception as e:
                         print(e)
                         continue
@@ -167,8 +185,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="LigPrep @dalong")
     parser.add_argument("workdir", help="Workdir")
     parser.add_argument("mols_smi", help="Seed fragments")
+    parser.add_argument("--mode",
+                        help="1: prepare pdbqt file for docking input; 2: prepare sdf file for shape based screening.",
+                        type=int, default=1)
 
     args = parser.parse_args()
     lig = LigPrep(args.mols_smi, args.workdir)
     lig.parse_infile()
-    lig.process()
+    if args.mode == 1:
+        lig.process(des="docking")
+    elif args.mode == 2:
+        lig.process(des="shape")

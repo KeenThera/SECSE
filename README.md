@@ -32,7 +32,7 @@ further validation.
    `export SCHRODINGER=/path/to/SCHRODINGER`
 2. Give execution permissions to the SECSE directory  
    `chmod -R +x /path/to/SECSE`
-3. Input fragments: a tab split _.smi_ file without header. See demo [here](demo/demo_1020.smi).
+3. Input fragments: a tab separated _.smi_ file without header. See demo [here](demo/demo_1020.smi).
 4. Parameters in config file:
 
    [DEFAULT]
