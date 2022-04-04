@@ -107,8 +107,10 @@ Linux server with CPUs only also works.
 
 -------
 Lu, C.; Liu, S.; Shi, W.; Yu, J.; Zhou, Z.; Zhang, X.; Lu, X.; Cai, F.; Xia, N.; Wang, Y. Systemic Evolutionary Chemical
-Space Exploration For Drug Discovery. ChemRxiv 2021. This content is a preprint and has not been peer-reviewed.
-https://doi.org/10.26434/chemrxiv-2021-tdg7f
+Space Exploration For Drug Discovery. J Cheminform 14, 19 (2022). 
+
+https://doi.org/10.1186/s13321-022-00598-4
+
 
 ### License
 
