@@ -50,7 +50,7 @@ class Grow(object):
 
         self.config_path = config_path
 
-        if rule_db == 0:
+        if rule_db in [0, "0"]:
             self.rule_db = None
         elif str(rule_db).endswith("json"):
             os.makedirs(self.workdir, exist_ok=True)
