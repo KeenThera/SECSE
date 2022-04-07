@@ -15,7 +15,7 @@ from uitilities.load_rules import json_to_DB
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 
-RULE_DB = os.path.join(os.getenv("SECSE"), "growing/mutation/rules_tmp_2022_0218.db")
+RULE_DB = os.path.join(os.getenv("SECSE"), "growing/mutation/rules_demo.db")
 
 
 class Mutation:
