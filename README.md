@@ -82,7 +82,8 @@ further validation.
    Customized rule json template [rules.json](demo/rules.json). Rule ID should be in the form G-001-XXXX, like
    G-001-0001, G-001-0002, G-001-0003 ...
 5. Run SECSE  
-   `python $SECSE/run_secse.py --config path/to/config`
+   `python $SECSE/run_secse.py --config /path/to/config`  
+    Please input the absolute path of the config file here.
 6. Output files
     - merged_docked_best_timestamp_with_grow_path.csv: selected molecules and growing path
     - selected.sdf: 3D conformers of all selected molecules
@@ -98,7 +99,7 @@ GNU Parallel installation
   `sudo apt-get install parallel`
 - From source: https://www.gnu.org/software/parallel/
 
-numpy~=1.20.3, pandas~=1.3.3, pandarallel~=1.5.2, tqdm~=4.62.2, biopandas~=0.2.9, openbabel~=3.1.1, rdkit~=2021.03.5,
+numpy~=1.20.3, pandas~=1.3.3, xlrd～=2.0.1, pandarallel~=1.5.2, tqdm~=4.62.2, biopandas~=0.2.9, openbabel~=3.1.1, rdkit~=2021.03.5,
 chemprop~=1.3.1, torch~=1.9.0+cu111
 
 Linux server with CPUs only also works.
@@ -117,4 +118,4 @@ https://doi.org/10.1186/s13321-022-00598-4
 -------
 SECSE is released under [Apache License, Version 2.0](LICENSE.txt).
 
-Contact email: lu_chong@keenthera.com
+The project is being heavily developed, if you have any questions or suggestions, please contact: lu_chong@keenthera.com
