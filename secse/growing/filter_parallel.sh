@@ -9,7 +9,7 @@ gen=${2}
 config=${3}
 cpu_num=${4}
 script=$SECSE/growing/filter.py
-files=$RANDOM
+files=tmp.txt
 cd "${workdir}"/generation_split_by_seed || exit
 for i in *.csv; do
   echo "$i;$workdir;$gen;$config"

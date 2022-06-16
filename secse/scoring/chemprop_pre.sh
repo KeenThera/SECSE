@@ -10,7 +10,7 @@ max_gen=${4}
 num_output=${5}
 seed=${6}
 model_dir=$workdir/prediction/models/
-files=$RANDOM
+files=tmp.txt
 
 mkdir -p "$model_dir"
 

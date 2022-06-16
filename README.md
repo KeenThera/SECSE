@@ -18,8 +18,12 @@ further validation.
 ### Tutorials and Usage
 
 ----------------------------
-
-1. Set Environment Variables  
+1. Setup dependencies
+```bash
+conda create --name secse -c rdkit -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.03
+conda activate secse
+   ```
+3. Set Environment Variables  
    `export SECSE=/path/to/SECSE`  
    if you use AutoDock Vina for docking:
    [(download here)](https://github.com/ccsb-scripps/AutoDock-Vina/releases)  
@@ -30,10 +34,10 @@ further validation.
    if you use [Gilde](https://www.schrodinger.com/products/glide) for docking (additional installation & license
    required):  
    `export SCHRODINGER=/path/to/SCHRODINGER`
-2. Give execution permissions to the SECSE directory  
+4. Give execution permissions to the SECSE directory  
    `chmod -R +x /path/to/SECSE`
-3. Input fragments: a tab separated _.smi_ file without header. See demo [here](demo/demo_1020.smi).
-4. Parameters in config file:
+5. Input fragments: a tab separated _.smi_ file without header. See demo [here](demo/demo_1020.smi).
+6. Parameters in config file:
 
    [DEFAULT]
     - _workdir_, working directory, create if not exists, otherwise overwrite, type=str
@@ -81,10 +85,10 @@ further validation.
    Config file of a demo case [phgdh_demo_vina.ini](demo/phgdh_demo_vina.ini)  
    Customized rule json template [rules.json](demo/rules.json). Rule ID should be in the form G-001-XXXX, like
    G-001-0001, G-001-0002, G-001-0003 ...
-5. Run SECSE  
+7. Run SECSE  
    `python $SECSE/run_secse.py --config /path/to/config`  
     Please input the absolute path of the config file here.
-6. Output files
+8. Output files
     - merged_docked_best_timestamp_with_grow_path.csv: selected molecules and growing path
     - selected.sdf: 3D conformers of all selected molecules
 

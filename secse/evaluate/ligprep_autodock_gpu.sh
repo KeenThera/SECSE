@@ -11,7 +11,7 @@ receptor=${3}
 cpu_num=${4}
 gpu_num=${5}
 
-files=$RANDOM
+files=tmp.txt
 script=$SECSE/evaluate/ligprep.py
 split_dir=$workdir/docking_split
 docking_dir=$workdir/docking_poses
