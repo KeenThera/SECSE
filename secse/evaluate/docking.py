@@ -63,6 +63,7 @@ def check_mols(workdir, program):
             except ValueError:
                 print("Failed check: ", i)
                 continue
+            new = Chem.AddHs(new, addCoords=True)
             Chem.MolToMolFile(new, sdf_path)
             if program == 0:
                 with open(pdb_path, "r") as pdb:
