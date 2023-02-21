@@ -20,7 +20,7 @@ further validation.
 ----------------------------
 1. Setup dependencies
     ```bash
-    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.03
+    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.09
     conda activate secse
    ```
 2. ```bash
