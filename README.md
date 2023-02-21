@@ -19,9 +19,12 @@ further validation.
 
 ----------------------------
 1. Setup dependencies
-```bash
-conda create --name secse -c rdkit -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.03
-conda activate secse
+    ```bash
+    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.03
+    conda activate secse
+   ```
+2. ```bash
+    git clone https://github.com/KeenThera/SECSE.git
    ```
 3. Set Environment Variables  
    `export SECSE=/path/to/SECSE`  

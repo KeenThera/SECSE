@@ -8,11 +8,11 @@
 import argparse
 import os
 import shutil
-import subprocess
 import sys
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from uitilities.function_helper import shell_cmd_execute
 
 sys.path.append(os.getenv("SECSE"))
 
@@ -21,17 +21,14 @@ AUTODOCK_GPU_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_autod
 
 
 def dock_by_py_vina(workdir, smi, receptor, cpu_num, x, y, z, box_size_x=20, box_size_y=20, box_size_z=20):
-    cmd = " ".join(
-        list(map(str, [VINA_SHELL, workdir, smi, receptor, x, y, z, box_size_x, box_size_y, box_size_z, cpu_num])))
-    print(cmd)
-    subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+    cmd = list(map(str, [VINA_SHELL, workdir, smi, receptor, x, y, z, box_size_x, box_size_y, box_size_z, cpu_num]))
+    shell_cmd_execute(cmd)
     merged_sdf(workdir, 0)
 
 
 def dock_by_py_autodock_gpu(workdir, smi, receptor, cpu_num, gpu_num):
-    cmd = " ".join(list(map(str, [AUTODOCK_GPU_SHELL, workdir, smi, receptor, cpu_num, gpu_num])))
-    print(cmd)
-    subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+    cmd = list(map(str, [AUTODOCK_GPU_SHELL, workdir, smi, receptor, cpu_num, gpu_num]))
+    shell_cmd_execute(cmd)
     merged_sdf(workdir, 1)
 
 
@@ -39,9 +36,8 @@ def merged_sdf(workdir, program):
     # modify output sdf
     check_mols(workdir, program)
     out_sdf = os.path.join(workdir, "docking_outputs_with_score.sdf")
-    cmd_cat = "find {} -name \"*sdf\" | xargs -n 100 cat > {}".format(os.path.join(workdir, "sdf_files"), out_sdf)
-    print(cmd_cat)
-    subprocess.check_output(cmd_cat, shell=True, stderr=subprocess.STDOUT)
+    cmd_cat = ["find", os.path.join(workdir, "sdf_files"), "-name \"*sdf\" | xargs -n 100 cat >", out_sdf]
+    shell_cmd_execute(cmd_cat)
     # remove temporary files
     shutil.rmtree(os.path.join(workdir, "pdb_files"))
     shutil.rmtree(os.path.join(workdir, "ligands_for_docking"))

@@ -8,7 +8,6 @@
 import csv
 import shutil
 import os
-import subprocess
 import pandas as pd
 import rdkit
 import configparser
@@ -20,15 +19,17 @@ from scoring.docking_score_prediction import prepare_files
 from scoring.sampling import sample_by_similarity, sample_by_rule_weight
 from evaluate.docking import dock_by_py_vina, dock_by_py_autodock_gpu
 from uitilities.load_rules import json_to_DB
+from uitilities.function_helper import shell_cmd_execute
 import time
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 
 
 class Grow(object):
-    def __init__(self, generation, mols_smi, workdir, num_per_gen, docking_program,
-                 receptor, start_gen, dl_mode, config_path,
-                 cpu_num=0, gpu_num=1, rule_db=0, x=0, y=0, z=0, box_size_x=0, box_size_y=0, box_size_z=0):
+    def __init__(self, generation, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
+                 config_path, cpu_num=0, gpu_num=1, rule_db=0, project_code="GEN", x=0, y=0, z=0, box_size_x=0,
+                 box_size_y=0, box_size_z=0):
+
         self.mols_smi = mols_smi
         self.total_generation = int(generation)
         self.workdir = workdir
@@ -50,14 +51,18 @@ class Grow(object):
 
         self.config_path = config_path
 
+        rule_db = str(rule_db)
         if rule_db in [0, "0"]:
             self.rule_db = None
-        elif str(rule_db).endswith("json"):
+        elif rule_db.endswith("json"):
             os.makedirs(self.workdir, exist_ok=True)
             self.rule_db = os.path.join(self.workdir, "rules.db")
             json_to_DB(rule_db, self.rule_db)
+        elif rule_db.endswith("db"):
+            self.rule_db = rule_db
         else:
             raise Exception("Please check your input rule file.")
+        self.project_code = project_code
 
         self.lig_sdf = None
         self.winner_df = None
@@ -131,9 +136,8 @@ class Grow(object):
         config.read(self.config_path)
 
         dl_select_num = config.get("deep learning", "dl_per_gen")
-        dl_cmd = " ".join([dl_shell, self.workdir, train, pre, str(self.gen), dl_select_num, "22"])
-        print(dl_cmd)
-        subprocess.check_output(dl_cmd, shell=True, stderr=subprocess.STDOUT)
+        dl_cmd = [dl_shell, self.workdir, train, pre, str(self.gen), dl_select_num, "22"]
+        shell_cmd_execute(dl_cmd)
         # docking top predicted compounds
         self.workdir_now = os.path.join(self.workdir, "generation_{}_pre".format(self.gen))
         self.mols_smi = os.path.join(self.workdir_now, "mols_for_docking_pred.smi")
@@ -144,7 +148,7 @@ class Grow(object):
             self.lig_sdf = os.path.join(self.workdir, "generation_{}".format(self.gen),
                                         "docking_outputs_with_score.sdf")
             merge_cmd = ["cat", os.path.join(self.workdir_now, "docking_outputs_with_score.sdf"), ">>", self.lig_sdf]
-            subprocess.check_output(" ".join(merge_cmd), shell=True, stderr=subprocess.STDOUT)
+            shell_cmd_execute(merge_cmd)
             self.workdir_now = os.path.join(self.workdir, "generation_{}".format(self.gen))
 
     def grow(self):
@@ -181,26 +185,23 @@ class Grow(object):
 
             self._generation_dir = os.path.join(self.workdir_now, "generation_split_by_seed")
             self.winner_df = self.winner_df.reset_index(drop=True)
-            header = mutation_df(self.winner_df, self.workdir, self.cpu_num, self.gen, self.rule_db)
+            header = mutation_df(self.winner_df, self.workdir, self.cpu_num, self.gen, self.rule_db, self.project_code)
             generation_path = os.path.join(self.workdir_now, "generation")
 
-            cmd_cat = "cat {} > {}".format(os.path.join(self.workdir_now, "mutation.csv"),
-                                           generation_path + ".raw")
-            subprocess.check_output(cmd_cat, shell=True, stderr=subprocess.STDOUT)
-            cmd_dedup = "awk -F',' '!seen[$(NF-4)]++' " + generation_path + ".raw > " + generation_path + ".csv"
-            subprocess.check_output(cmd_dedup, shell=True, stderr=subprocess.STDOUT)
+            cmd_cat = ["cat", os.path.join(self.workdir_now, "mutation.csv"), ">", generation_path + ".raw"]
+            shell_cmd_execute(cmd_cat)
+            cmd_dedup = ["awk -F',' '!seen[$(NF-4)]++'", generation_path + ".raw", ">", generation_path + ".csv"]
+            shell_cmd_execute(cmd_dedup)
             if not os.path.exists(self._generation_dir):
                 os.mkdir(self._generation_dir)
-            cmd_split = "awk -F, '{print>\"" + self._generation_dir + "/\"$2\".csv\"}' " + generation_path + ".csv"
-            subprocess.check_output(cmd_split, shell=True, stderr=subprocess.STDOUT)
+            cmd_split = ["awk -F, '{print>\"" + self._generation_dir + "/\"$2\".csv\"}'", generation_path + ".csv"]
+            shell_cmd_execute(cmd_split)
             # filter
             print("Step 2: Filtering all mutated mols")
             time1 = time.time()
-            cmd_filter = ["sh", os.path.join(os.getenv("SECSE"), "growing", "filter_parallel.sh"), self.workdir_now,
+            cmd_filter = ["bash", os.path.join(os.getenv("SECSE"), "growing", "filter_parallel.sh"), self.workdir_now,
                           str(self.gen), self.config_path, str(self.cpu_num)]
-            cmd_filter = " ".join(cmd_filter)
-            print(cmd_filter)
-            subprocess.check_output(cmd_filter, shell=True, stderr=subprocess.STDOUT)
+            shell_cmd_execute(cmd_filter)
             time2 = time.time()
             print("Filter runtime: {:.2f} min.".format((time2 - time1) / 60))
 

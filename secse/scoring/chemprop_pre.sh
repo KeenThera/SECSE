@@ -18,7 +18,7 @@ mkdir -p "$model_dir"
 model="$model_dir"/G"$max_gen"_seed"$seed"
 chemprop_train --data_path "$train" --dataset_type regression --save_dir \
   "$model" --seed "$seed" --save_smiles --save_preds --show_individual_scores \
-  --extra_metrics {r2,mae,mse} --split_type random
+  --extra_metrics r2 mae mse --split_type random
 
 # split files and prediction with CPU Parallelization
 split_dir=$workdir/prediction/pre_split_$max_gen

@@ -2,7 +2,6 @@ import os
 import sys
 
 sys.path.append(os.getenv("SECSE"))
-import subprocess
 import copy
 import sqlite3
 import pandas as pd
@@ -12,6 +11,7 @@ from rdkit import Chem
 from rdkit.Chem import rdChemReactions
 from uitilities.wash_mol import get_bridged_atoms, neutralize_atoms
 from uitilities.load_rules import json_to_DB
+from uitilities.function_helper import shell_cmd_execute
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 
@@ -168,7 +168,7 @@ class Mutation:
         self.out_product_smiles = []
 
 
-def mutation_df(df: pd.DataFrame, workdir, cpu_num, gen=1, rule_db=None):
+def mutation_df(df: pd.DataFrame, workdir, cpu_num, gen=1, rule_db=None, project_code="GEN"):
     workdir = os.path.join(workdir, "generation_" + str(gen))
 
     if rule_db is None:
@@ -208,11 +208,12 @@ def mutation_df(df: pd.DataFrame, workdir, cpu_num, gen=1, rule_db=None):
             # write mutation mols
             for info in i[-1]:
                 info = list(map(str, info))
-                new_line = last_gen_info + [info[0]] + ["GEN_" + str(gen) + "_M_" + str(n).zfill(9)] + info[1:]
+                new_line = last_gen_info + [info[0]] + [
+                    project_code.upper() + "_" + str(gen) + "_M_" + str(n).zfill(9)] + info[1:]
                 f.write(",".join(new_line) + "\n")
                 n += 1
     # drop duplicates product smiles by awk
-    cmd_dedup = "awk -F',' '!seen[$(NF-4)]++' " + mut_path + ".raw > " + mut_path + ".csv"
-    subprocess.check_output(cmd_dedup, shell=True, stderr=subprocess.STDOUT)
+    cmd_dedup = ["awk -F',' '!seen[$(NF-4)]++'", mut_path + ".raw ", ">", mut_path + ".csv"]
+    shell_cmd_execute(cmd_dedup)
 
     return header

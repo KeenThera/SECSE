@@ -6,15 +6,14 @@
 @time: 2021/11/19/10:05
 """
 import os
-import subprocess
+from uitilities.function_helper import shell_cmd_execute
 
 GLIDE_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_glide.sh")
 
 
 def dock_by_glide(workdir, mols_smi, target, gen, dock_mode, cpu_num):
     ligprep_glide = [GLIDE_SHELL, mols_smi, workdir, target, str(gen), dock_mode, str(cpu_num)]
-    print(" ".join(ligprep_glide))
-    subprocess.check_output(" ".join(ligprep_glide), shell=True, stderr=subprocess.STDOUT)
+    shell_cmd_execute(ligprep_glide)
     glide_out = os.path.join(workdir, "glide_gen_{}_lib.sdf".format(gen))
     sdf_path = os.path.join(workdir, "docking_outputs_with_score.sdf")
     write_score = False

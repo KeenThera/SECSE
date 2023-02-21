@@ -32,6 +32,7 @@ def main():
         cpu_num = config.getint("DEFAULT", "cpu")
         gpu_num = config.getint("DEFAULT", "gpu")
         rule_db = config.get("DEFAULT", "rule_db")
+        project_code = config.get("DEFAULT", "project_code")
 
         receptor = config.get("docking", "target")
         dl_mode = config.getint("deep learning", "mode")
@@ -49,16 +50,16 @@ def main():
         return None
 
     if "vina" in docking_program.lower():
-        workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor,
-                        start_gen, dl_mode, args.config, cpu_num=cpu_num, rule_db=rule_db, x=x, y=y, z=z,
+        workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
+                        args.config, cpu_num=cpu_num, rule_db=rule_db, project_code=project_code, x=x, y=y, z=z,
                         box_size_x=box_size_x, box_size_y=box_size_y, box_size_z=box_size_z)
 
     elif "glide" in docking_program.lower():
         workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
-                        args.config, cpu_num=cpu_num, rule_db=rule_db)
+                        args.config, cpu_num=cpu_num, rule_db=rule_db, project_code=project_code)
     elif "autodock-gpu" in docking_program.lower():
         workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
-                        args.config, cpu_num=cpu_num, gpu_num=gpu_num, rule_db=rule_db)
+                        args.config, cpu_num=cpu_num, gpu_num=gpu_num, rule_db=rule_db, project_code=project_code)
     else:
         print("Please check your input docking program argument.")
         return None
@@ -75,7 +76,7 @@ if __name__ == '__main__':
         "     / ___|  | ____|  / ___| / ___|  | ____|\n",
         "     \\___ \\  |  _|   | |     \\___ \\  |  _|  \n",
         "      ___) | | |___  | |___   ___) | | |___ \n",
-        "     |____/  |_____|  \\____| |____/  |_____|")
+        "     |____/  |_____|  \\____| |____/  |_____| v1.2")
 
     main()
     time2 = time.time()

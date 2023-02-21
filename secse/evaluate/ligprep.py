@@ -122,7 +122,7 @@ def ionization(sdf_path):
         mol.removeh()
         mol.OBMol.AddHydrogens(False, True, 7.4)
         mol.OBMol.CorrectForPH(7.4)
-        charge_model = ob.OBChargeModel_FindType("gasteiger")
+        charge_model = ob.OBChargeModel.FindType("gasteiger")
         charge_model.ComputeCharges(mol.OBMol)
         # mol.localopt(forcefield='mmff94', steps=500)
         mol.write("pdbqt", "{}.pdbqt".format(os.path.join(path, name)), overwrite=True)

@@ -6,7 +6,6 @@
 @time: 2021/10/27/14:26
 """
 import argparse
-import subprocess
 
 from openbabel import openbabel
 import pandas as pd
@@ -16,6 +15,7 @@ from rdkit import Chem
 from rdkit.Chem import PandasTools
 from rdkit.Chem import MolStandardize
 from tqdm import tqdm
+from uitilities.function_helper import shell_cmd_execute
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 
@@ -47,30 +47,30 @@ def get_pre(workdir, max_gen, get_all=False):
         pre_raw = os.path.join(pre_dir, "all_G" + str(max_gen) + "_for_pre.raw")
         pre_file = os.path.join(pre_dir, "all_G" + str(max_gen) + "_for_pre.csv")
 
-        cmd_cat = "find {} -name \"filter.csv\" |xargs awk -F, 'NR>1{{print $(NF-5)\",\"$(NF-6)}}' > {}".format(
-            workdir, pre_raw)
-        subprocess.check_output(cmd_cat, shell=True, stderr=subprocess.STDOUT)
-        cmd_dedup = "awk -F',' '!seen[$2]++' " + pre_raw + " > " + pre_file
-        subprocess.check_output(cmd_dedup, shell=True, stderr=subprocess.STDOUT)
+        cmd_cat = ["find", workdir, "-name \"filter.csv\" |xargs awk -F, 'NR>1{{print $(NF-5)\",\"$(NF-6)}}' >",
+                   pre_raw]
+        shell_cmd_execute(cmd_cat)
+        cmd_dedup = ["awk -F',' '!seen[$2]++'", pre_raw, ">", pre_file]
+        shell_cmd_execute(cmd_dedup)
 
         drop_mols = os.path.join(pre_dir, "drop_ids.txt")
-        mols_id_cat = "find {} -name \"mols_for_docking.smi\" |xargs cut -f2  > {}".format(workdir, drop_mols)
-        subprocess.check_output(mols_id_cat, shell=True, stderr=subprocess.STDOUT)
+        mols_id_cat = ["find", workdir, "-name \"mols_for_docking.smi\" |xargs cut -f2  >", drop_mols]
+        shell_cmd_execute(mols_id_cat)
         final_file = os.path.join(pre_dir, "all_G" + str(max_gen) + "_for_pre_uniq.csv")
     else:
         pre_file = os.path.join(pre_dir, "gen_" + str(max_gen) + "_for_pre.csv")
-        cmd_cp = "awk -F, 'NR>1{{print $(NF-5)\",\"$(NF-6)}}' {} > {}".format(
-            os.path.join(workdir, "generation_" + str(max_gen), "filter.csv"), pre_file)
-        subprocess.check_output(cmd_cp, shell=True, stderr=subprocess.STDOUT)
+        cmd_cp = ["awk -F, 'NR>1{{print $(NF-5)\",\"$(NF-6)}}'",
+                  os.path.join(workdir, "generation_" + str(max_gen), "filter.csv"), ">", pre_file]
+        shell_cmd_execute(cmd_cp)
 
         drop_mols = os.path.join(pre_dir, "drop_ids_{}.txt".format(max_gen))
-        mols_id_cat = "cut -f2 {} > {}".format(
-            os.path.join(workdir, "generation_" + str(max_gen), "mols_for_docking.smi"), drop_mols)
-        subprocess.check_output(mols_id_cat, shell=True, stderr=subprocess.STDOUT)
+        mols_id_cat = ["cut -f2", os.path.join(workdir, "generation_" + str(max_gen), "mols_for_docking.smi"), ">",
+                       drop_mols]
+        shell_cmd_execute(mols_id_cat)
         final_file = os.path.join(pre_dir, "gen_" + str(max_gen) + "_for_pre_uniq.csv")
 
-    cmd_drop = "grep -wvf {} {} > {}".format(drop_mols, pre_file, final_file)
-    subprocess.check_output(cmd_drop, shell=True, stderr=subprocess.STDOUT)
+    cmd_drop = ["grep -wvf", drop_mols, pre_file, ">", final_file]
+    shell_cmd_execute(cmd_drop)
     return final_file
 
 

@@ -13,11 +13,11 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
-import subprocess
 from pandarallel import pandarallel
 import configparser
 
 from scoring.ranking import read_dock_file
+from uitilities.function_helper import shell_cmd_execute
 
 pandarallel.initialize(verbose=0)
 
@@ -113,8 +113,8 @@ def grep_sdf(workdir, merge_file):
     merged_sdf = os.path.join(workdir, "merged_all.sdf")
     selected_sdf = os.path.join(workdir, "selected.sdf")
     # merge all sdf
-    cmd_merge = "find {} -name \"docking_outputs_with_score.sdf\" | xargs cat > {}".format(workdir, merged_sdf)
-    subprocess.check_output(cmd_merge, shell=True, stderr=subprocess.STDOUT)
+    cmd_merge = ["find", workdir, "-name \"docking_outputs_with_score.sdf\" | xargs cat >", merged_sdf]
+    shell_cmd_execute(cmd_merge)
     # create ids
     df = pd.read_csv(merge_file)
     ids = list(set(df["id"].apply(lambda x: x.split("-dp")[0])))
