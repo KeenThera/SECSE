@@ -43,6 +43,7 @@ further validation.
 6. Parameters in config file:
 
    [DEFAULT]
+    - _project_code_, project identifier, which will be prefixed to each generated molecule ID, type=str
     - _workdir_, working directory, create if not exists, otherwise overwrite, type=str
     - _fragments_, file path to seed fragments, smi format, type=str
     - _num_gen_, number of generations, type=int
