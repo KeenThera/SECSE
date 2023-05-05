@@ -4,8 +4,8 @@
 @author: Liu Shien
 @file: ligprep.py
 @time: 2021/4/1/16:28
-@modiy: 2022/3/1/12:04
-@modiy: 2023/5/5/14:22
+@modify: 2022/3/1/12:04
+@modify: 2023/5/5/14:22
 """
 import argparse
 import os
