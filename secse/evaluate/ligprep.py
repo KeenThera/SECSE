@@ -5,6 +5,7 @@
 @file: ligprep.py
 @time: 2021/4/1/16:28
 @modiy: 2022/3/1/12:04
+@modiy: 2023/5/5/14:22
 """
 import argparse
 import os
@@ -114,19 +115,21 @@ def gen_minimized_3D(path, rdmol, numConformer=1, rms_cutoff=1, addH=True):
     return sdf_path
 
 
-def ionization(sdf_path):
+def ionization(smi_string):
+    mol = pybel.readstring("smi", smi_string)
+    mol.OBMol.AddHydrogens(False, True, 7.4)
+    mol.OBMol.CorrectForPH(7.4)
+    charged_smi = mol.write("can",None, overwrite=True)
+
+    return charged_smi
+
+
+def sdf2pdbqt(sdf_path):
     path = os.path.dirname(sdf_path)
     name = os.path.basename(sdf_path).split(".")[0]
     num = 0
     for mol in pybel.readfile("sdf", sdf_path):
-        mol.removeh()
-        mol.OBMol.AddHydrogens(False, True, 7.4)
-        mol.OBMol.CorrectForPH(7.4)
-        charge_model = ob.OBChargeModel.FindType("gasteiger")
-        charge_model.ComputeCharges(mol.OBMol)
-        # mol.localopt(forcefield='mmff94', steps=500)
         mol.write("pdbqt", "{}.pdbqt".format(os.path.join(path, name)), overwrite=True)
-        # mol.write("sdf", "{}.sdf".format(os.path.join(path, name)), overwrite=True)
         num += 1
 
     return num == 1
@@ -146,6 +149,7 @@ class LigPrep:
                     continue
                 smi = tmp[0]
                 id1 = tmp[1]
+                smi = ionization(smi)
 
                 mol = Chem.MolFromSmiles(smi)
                 if mol is None:
@@ -173,7 +177,7 @@ class LigPrep:
                     try:
                         if des == 'docking':
                             sdf_path = gen_minimized_3D(path, newmol)
-                            ionization(sdf_path)
+                            sdf2pdbqt(sdf_path)
                         if des == 'shape':
                             gen_minimized_3D(path, newmol, 10)
                     except Exception as e:
