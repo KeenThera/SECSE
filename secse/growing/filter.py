@@ -16,7 +16,12 @@ sys.path.append(os.getenv("SECSE"))
 import rdkit.Chem as Chem
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt, CalcNumHBD, CalcNumHBA
 from rdkit.Chem import Descriptors, AllChem
+from rdkit.Chem import QED
+from rdkit.Chem import RDConfig
 import json
+
+sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
+import sascorer
 
 from utilities.ring_tool import RingSystems
 from utilities.substructure_filter import StructureFilter
@@ -198,15 +203,30 @@ class Filter:
         fp = AllChem.GetMorganFingerprintAsBitVect(self.mol, 2, 512)
 
 
+    def QED_filter(self):
+        if QED.qed(self.mol) > 0.5:
+            yield "PASS"
+        else:
+            yield "QED"
+
+    def SA_filter(self):
+        sa_score = sascorer.calculateScore(self.mol)
+        if sa_score < 5:
+            yield "PASS"
+        else:
+            yield "SA score"
+
 def mol_filter(molfilter: Filter, smi):
     molfilter.load_mol(smi)
     pass_filter = [molfilter.pp_filter(),
                    molfilter.custom_filter(),
-                   molfilter.heteroatom_filter(),
                    molfilter.charge_filter(),
+                   molfilter.heteroatom_filter(),
                    molfilter.substructure_filter(),
                    molfilter.ring_system_filter(),
                    molfilter.alert_filter(),
+                   molfilter.QED_filter(),
+                   molfilter.SA_filter(),
                    ]
     for i in pass_filter:
         res = next(i)
