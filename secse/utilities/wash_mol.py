@@ -71,7 +71,7 @@ def neutralize_atoms(mol):
 
 
 def charge_mol(smi):
-    mol = pybel.readstring("smi", self.input_smiles)
+    mol = pybel.readstring("smi", smi)
     mol.removeh()
     mol.OBMol.AddHydrogens(False, True, 7.4)
     # mol.OBMol.CorrectForPH(7.4)

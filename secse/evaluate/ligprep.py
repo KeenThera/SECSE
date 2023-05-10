@@ -9,6 +9,7 @@
 """
 import argparse
 import os
+import sys
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers, StereoEnumerationOptions
