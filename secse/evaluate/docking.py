@@ -12,7 +12,7 @@ import sys
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from uitilities.function_helper import shell_cmd_execute
+from utilities.function_helper import shell_cmd_execute
 
 sys.path.append(os.getenv("SECSE"))
 

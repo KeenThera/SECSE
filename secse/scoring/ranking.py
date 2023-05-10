@@ -135,8 +135,9 @@ class Ranking(object):
 
     def cal_le_rank(self):
         # calculate ln LE and fitness rank
-        self.docked_df["le_ln"] = self.docked_df.apply(lambda x: x["docking score"] / x["molecule"].GetNumHeavyAtoms(),
-                                                       axis=1)
+        self.docked_df["le_ln"] = self.docked_df.apply(
+            lambda x: x["docking score"] / (1 + np.log(x["molecule"].GetNumHeavyAtoms())),
+            axis=1)
         self.diff = self.docked_df["le_ln"].max() - self.docked_df["le_ln"].min()
         self.score_min = self.docked_df["le_ln"].min()
         self.docked_df["fitness"] = 1 - ((self.docked_df["le_ln"] - self.score_min) / self.diff)

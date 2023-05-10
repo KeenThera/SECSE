@@ -9,9 +9,9 @@ import rdkit
 from pandarallel import pandarallel
 from rdkit import Chem
 from rdkit.Chem import rdChemReactions
-from uitilities.wash_mol import get_bridged_atoms, neutralize_atoms
-from uitilities.load_rules import json_to_DB
-from uitilities.function_helper import shell_cmd_execute
+from utilities.wash_mol import get_bridged_atoms, neutralize_atoms
+from utilities.load_rules import json_to_DB
+from utilities.function_helper import shell_cmd_execute
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 

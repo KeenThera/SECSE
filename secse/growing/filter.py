@@ -18,9 +18,9 @@ from rdkit.Chem.rdMolDescriptors import CalcExactMolWt, CalcNumHBD, CalcNumHBA
 from rdkit.Chem import Descriptors, AllChem
 import json
 
-from uitilities.ring_tool import RingSystems
-from uitilities.substructure_filter import StructureFilter
-from uitilities.wash_mol import wash_mol, neutralize, get_rotatable_bound_num, get_rigid_body_num
+from utilities.ring_tool import RingSystems
+from utilities.substructure_filter import StructureFilter
+from utilities.wash_mol import wash_mol, neutralize, get_rotatable_bound_num, get_rigid_body_num
 
 
 class Filter:

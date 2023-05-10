@@ -17,7 +17,7 @@ from pandarallel import pandarallel
 import configparser
 
 from scoring.ranking import read_dock_file
-from uitilities.function_helper import shell_cmd_execute
+from utilities.function_helper import shell_cmd_execute
 
 pandarallel.initialize(verbose=0)
 

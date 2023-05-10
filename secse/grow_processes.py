@@ -18,8 +18,8 @@ from scoring.diversity_score import clustering
 from scoring.docking_score_prediction import prepare_files
 from scoring.sampling import sample_by_similarity, sample_by_rule_weight
 from evaluate.docking import dock_by_py_vina, dock_by_py_autodock_gpu
-from uitilities.load_rules import json_to_DB
-from uitilities.function_helper import shell_cmd_execute
+from utilities.load_rules import json_to_DB
+from utilities.function_helper import shell_cmd_execute
 import time
 
 rdkit.RDLogger.DisableLog("rdApp.*")

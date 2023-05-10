@@ -15,7 +15,7 @@ from rdkit import Chem
 from rdkit.Chem import PandasTools
 from rdkit.Chem import MolStandardize
 from tqdm import tqdm
-from uitilities.function_helper import shell_cmd_execute
+from utilities.function_helper import shell_cmd_execute
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 
