@@ -8,6 +8,7 @@
 
 import random
 from openbabel import openbabel
+from openbabel import pybel
 from rdkit import Chem
 
 
@@ -68,6 +69,13 @@ def neutralize_atoms(mol):
             atom.UpdatePropertyCache()
     return mol
 
+def charge_mol(smi):
+    mol = pybel.readstring( "smi", self.input_smiles)
+    mol.removeh()
+    mol.OBMol.AddHydrogens(False, True, 7.4)
+    #mol.OBMol.CorrectForPH(7.4)
+    charged_smi = mol.write("can", None, overwrite=False).strip()
+    return charged_smi
 
 def radical_filter(smi):
     mol = Chem.MolFromSmiles(smi)
