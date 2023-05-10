@@ -17,7 +17,7 @@ from rdkit.Chem import rdDistGeom
 from rdkit.Chem import rdMolAlign
 from openbabel import pybel
 from openbabel import openbabel as ob
-from uitilities.wash_mol import charge_mol
+from utilities.wash_mol import charge_mol
 
 
 def setero(mol, onlyUnassigned=True):
