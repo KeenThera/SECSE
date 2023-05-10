@@ -20,7 +20,7 @@ import json
 
 from utilities.ring_tool import RingSystems
 from utilities.substructure_filter import StructureFilter
-from utilities.wash_mol import wash_mol, neutralize, get_rotatable_bound_num, get_rigid_body_num
+from utilities.wash_mol import wash_mol, neutralize, charge_mol, get_rotatable_bound_num, get_rigid_body_num
 
 
 class Filter:
@@ -179,8 +179,10 @@ class Filter:
     def charge_filter(self):
         negative_charge = Chem.MolFromSmarts("[*-1]")
         positive_charge = Chem.MolFromSmarts("[*+1]")
-        nc = len(self.mol.GetSubstructMatches(negative_charge))
-        pc = len(self.mol.GetSubstructMatches(positive_charge))
+        charged_smi = charge_mol(self.input_smiles)
+        mol = Chem.MolFromSmiles(charged_smi)
+        nc = len(mol.GetSubstructMatches(negative_charge))
+        pc = len(mol.GetSubstructMatches(positive_charge))
         npc = nc + pc
         if npc <= 1:
             yield "PASS"
