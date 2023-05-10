@@ -202,8 +202,8 @@ def mol_filter(molfilter: Filter, smi):
     molfilter.load_mol(smi)
     pass_filter = [molfilter.pp_filter(),
                    molfilter.custom_filter(),
-                   molfilter.charge_filter(),
                    molfilter.heteroatom_filter(),
+                   molfilter.charge_filter(),
                    molfilter.substructure_filter(),
                    molfilter.ring_system_filter(),
                    molfilter.alert_filter(),
