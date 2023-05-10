@@ -17,6 +17,7 @@ from rdkit.Chem import rdDistGeom
 from rdkit.Chem import rdMolAlign
 from openbabel import pybel
 from openbabel import openbabel as ob
+from uitilities.wash_mol import charge_mol
 
 
 def setero(mol, onlyUnassigned=True):
@@ -116,13 +117,7 @@ def gen_minimized_3D(path, rdmol, numConformer=1, rms_cutoff=1, addH=True):
 
 
 def ionization(smi_string):
-    mol = pybel.readstring("smi", smi_string)
-    mol.OBMol.AddHydrogens(False, True, 7.4)
-    mol.OBMol.CorrectForPH(7.4)
-    charged_smi = mol.write("can",None, overwrite=True)
-
-    return charged_smi
-
+    return charge_mol(smi_string)
 
 def sdf2pdbqt(sdf_path):
     path = os.path.dirname(sdf_path)
