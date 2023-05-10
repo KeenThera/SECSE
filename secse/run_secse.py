@@ -64,7 +64,7 @@ def main():
         print("Please check your input docking program argument.")
         return None
     workflow.grow()
-    write_growth(num_gen, workdir, dl_mode, args.config)
+    write_growth(num_gen, workdir, workflow.dl_mode, args.config)
 
 
 if __name__ == '__main__':

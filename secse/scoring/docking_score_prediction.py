@@ -69,8 +69,11 @@ def get_pre(workdir, max_gen, get_all=False):
         shell_cmd_execute(mols_id_cat)
         final_file = os.path.join(pre_dir, "gen_" + str(max_gen) + "_for_pre_uniq.csv")
 
-    cmd_drop = ["grep -wvf", drop_mols, pre_file, ">", final_file]
-    shell_cmd_execute(cmd_drop)
+    try:
+        cmd_drop = ["grep -wvf", drop_mols, pre_file, ">", final_file]
+        shell_cmd_execute(cmd_drop)
+    except:
+        final_file = None
     return final_file
 
 

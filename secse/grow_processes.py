@@ -131,6 +131,10 @@ class Grow(object):
         print("Step {}.1: Building deep learning models...".format(str(step)))
 
         train, pre = prepare_files(self.gen, self.workdir, self.dl_mode)
+        if pre is None:
+            print("All generated molecules were docked. Skipping the step of docking score prediction .")
+            self.dl_mode = 0
+            return
         dl_shell = os.path.join(os.getenv("SECSE"), "scoring", "chemprop_pre.sh")
         config = configparser.ConfigParser()
         config.read(self.config_path)
