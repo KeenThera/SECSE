@@ -203,7 +203,7 @@ class Grow(object):
             # filter
             print("Step 2: Filtering all mutated mols")
             time1 = time.time()
-            cmd_filter = ["bash", os.path.join(os.getenv("SECSE"), "growing", "filter_parallel.sh"), self.workdir_now,
+            cmd_filter = [os.path.join(os.getenv("SECSE"), "growing", "filter_parallel.sh"), self.workdir_now,
                           str(self.gen), self.config_path, str(self.cpu_num)]
             shell_cmd_execute(cmd_filter)
             time2 = time.time()
