@@ -62,7 +62,7 @@ class Mutation:
         rules_dict = {}
         try:
             sql = 'select * from "{}"'.format("G-002")
-            conn = sqlite3.connect(RULE_DB)
+            conn = sqlite3.connect(self.rule_db)
             conn.row_factory = sqlite3.Row
             c = conn.cursor()
             c.execute(sql)
