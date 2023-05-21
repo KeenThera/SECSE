@@ -6,6 +6,7 @@
 @time: 2021/01/19/13:42
 """
 import os
+import sys
 import time
 import argparse
 import numpy as np
@@ -16,6 +17,7 @@ from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
 from pandarallel import pandarallel
 import configparser
 
+sys.path.append(os.getenv("SECSE"))
 from scoring.ranking import read_dock_file
 from utilities.function_helper import shell_cmd_execute
 
@@ -64,7 +66,7 @@ def merge_multi_generation(workdir, max_gen, file_path, dl_mode, config_path):
 def grow_path(mut_dic_all, mut_id):
     mut_id = mut_id.split("-dp")[0].split("-C")[0]
     try:
-        gen_mol = int(mut_id.split("_")[1])
+        gen_mol = int(mut_id.split("_")[-3])
     except IndexError:
         print(mut_id)
         return None
@@ -180,5 +182,6 @@ if __name__ == '__main__':
     parser.add_argument("workdir", help="Workdir")
     parser.add_argument("dl_mode",
                         help="Mode of deep learning modeling, 0: not use, 1: modeling per generation, 2: modeling overall after all the generation")
+    parser.add_argument("config_path", help="config file path", type=str)
     args = parser.parse_args()
-    write_growth(args.max_gen, args.workdir, args.dl_mode)
+    write_growth(args.max_gen, args.workdir, args.dl_mode, args.config_path)
