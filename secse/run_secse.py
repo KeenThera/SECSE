@@ -64,7 +64,6 @@ def main():
         print("Please check your input docking program argument.")
         return None
     workflow.grow()
-    write_growth(num_gen, workdir, workflow.dl_mode, args.config)
 
 
 if __name__ == '__main__':
@@ -76,9 +75,13 @@ if __name__ == '__main__':
         "     / ___|  | ____|  / ___| / ___|  | ____|\n",
         "     \\___ \\  |  _|   | |     \\___ \\  |  _|  \n",
         "      ___) | | |___  | |___   ___) | | |___ \n",
-        "     |____/  |_____|  \\____| |____/  |_____| v1.2")
+        "     |____/  |_____|  \\____| |____/  |_____| v1.3")
 
-    main()
+    try:
+        main()
+    except SystemExit as err:
+        print(err)
+
     time2 = time.time()
     print("Time consumption (total): {} hours".format(round((time2 - time1) / 3600, 2)))
     print("*" * 88)

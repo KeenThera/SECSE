@@ -18,6 +18,7 @@ from scoring.diversity_score import clustering
 from scoring.docking_score_prediction import prepare_files
 from scoring.sampling import sample_by_similarity, sample_by_rule_weight
 from evaluate.docking import dock_by_py_vina, dock_by_py_autodock_gpu
+from report.grow_path import write_growth
 from utilities.load_rules import json_to_DB
 from utilities.function_helper import shell_cmd_execute
 import time
@@ -45,7 +46,13 @@ class Grow(object):
         self.box_size_y = box_size_y
         self.box_size_z = box_size_z
 
+        self.start_gen = start_gen  # record start
         self.gen = start_gen  # generation num for now
+        # Resume from breakpoint
+        if self.gen > 0:
+            self.workdir_now = os.path.join(self.workdir, "generation_{}".format(self.gen))
+            self.mols_smi = os.path.join(self.workdir_now, "mols_for_docking.smi")
+
         self.docking_program = docking_program.lower()
         self.dl_mode = dl_mode
 
@@ -72,6 +79,9 @@ class Grow(object):
         self._dock_df = None
         self._sampled_df = None
         self.workdir_now = None
+
+        self._GROWING_STATE_LIST = ["GROWING", "BROKEN", "STOP"]
+        self.growing_flag = self._GROWING_STATE_LIST[0]
 
     def docking_sh(self, step):
         start = time.time()
@@ -110,29 +120,33 @@ class Grow(object):
     def ranking_docked_mols(self, step=2):
         print("Step {}: Ranking docked molecules...".format(str(step)))
         ranking = Ranking(sdf=self.lig_sdf, gen=self.gen, config_file=self.config_path)
-
-        ranking.docked_df.to_csv(
-            os.path.join(self.workdir, "generation_" + str(self.gen), "docked_gen_" + str(self.gen) + ".csv"),
-            index=False)
-        ranking.tournament_selection()
-        # merge mols whose evaluate score below the cutoff
-        ranking.mols_score_below_cutoff()
-        self.winner_df = ranking.final_df
-        # generate smi file
-        self.winner_path = os.path.join(self.workdir, "generation_" + str(self.gen),
-                                        "best_fragment_gen_" + str(self.gen) + ".smi")
-        self.winner_df["id_gen_" + str(self.gen)] = self.winner_df["id_gen_" + str(self.gen)].apply(
-            lambda x: x.split("\t")[0])
-        self.winner_df[["smiles_gen_" + str(self.gen), "id_gen_" + str(self.gen)]].to_csv(self.winner_path, sep="\t",
-                                                                                          index=False,
-                                                                                          quoting=csv.QUOTE_NONE)
+        if ranking.ranking_flag:
+            ranking.docked_df.to_csv(
+                os.path.join(self.workdir, "generation_" + str(self.gen), "docked_gen_" + str(self.gen) + ".csv"),
+                index=False)
+            ranking.tournament_selection()
+            # merge mols whose evaluate score below the cutoff
+            ranking.mols_score_below_cutoff()
+            self.winner_df = ranking.final_df
+            # generate smi file
+            self.winner_path = os.path.join(self.workdir, "generation_" + str(self.gen),
+                                            "best_fragment_gen_" + str(self.gen) + ".smi")
+            self.winner_df["id_gen_" + str(self.gen)] = self.winner_df["id_gen_" + str(self.gen)].apply(
+                lambda x: x.split("\t")[0])
+            self.winner_df[["smiles_gen_" + str(self.gen), "id_gen_" + str(self.gen)]].to_csv(self.winner_path,
+                                                                                              sep="\t",
+                                                                                              index=False,
+                                                                                              quoting=csv.QUOTE_NONE)
+        else:
+            self.growing_flag = self._GROWING_STATE_LIST[1]
+        self.check_growing()
 
     def dl_pre(self, step):
         print("Step {}.1: Building deep learning models...".format(str(step)))
 
         train, pre = prepare_files(self.gen, self.workdir, self.dl_mode)
         if pre is None:
-            print("All generated molecules were docked. Skipping the step of docking score prediction .")
+            print("Skipping docking score prediction as all molecules have been docked.")
             self.dl_mode = 0
             return
         dl_shell = os.path.join(os.getenv("SECSE"), "scoring", "chemprop_pre.sh")
@@ -155,6 +169,24 @@ class Grow(object):
             shell_cmd_execute(merge_cmd)
             self.workdir_now = os.path.join(self.workdir, "generation_{}".format(self.gen))
 
+    def check_growing(self):
+        if self.growing_flag == self._GROWING_STATE_LIST[0]:
+            # still growing
+            pass
+        elif self.growing_flag == self._GROWING_STATE_LIST[1]:
+            # broken and report generated molecules
+            if self.dl_mode == 2:
+                self.dl_mode = 0
+            write_growth(self.config_path, self.gen - 1, self.dl_mode)
+            raise SystemExit(
+                "Note: Calculations are only performed from the generation {} to the generation {} out of the preset generations.".format(
+                    self.start_gen, self.gen - 1))
+        elif self.growing_flag == self._GROWING_STATE_LIST[2]:
+            # regular finsh and stop the program
+            write_growth(self.config_path, self.gen, self.dl_mode)
+            raise SystemExit(
+                "Finish the calculation from the generation {} to the generation {}".format(self.start_gen, self.gen))
+
     def grow(self):
         print("\n{}\nInput fragment file: {}".format("*" * 66, self.mols_smi))
         print("Target grid file: {}".format(self.target))
@@ -173,7 +205,7 @@ class Grow(object):
                 pass
         self.ranking_docked_mols(step)
 
-        # next generations: 1.copy best mols from last generation as seed; 2.mutation; 3.filter; 4. sampling;
+        # next generations: 1.copy the best mols from last generation as seed; 2.mutation; 3.filter; 4. sampling;
         #                   5.clustering; 6.evaluate; 7.ranking
         for g in range(1, self.total_generation + 1):
             self.gen += 1
@@ -201,7 +233,7 @@ class Grow(object):
             cmd_split = ["awk -F, '{print>\"" + self._generation_dir + "/\"$2\".csv\"}'", generation_path + ".csv"]
             shell_cmd_execute(cmd_split)
             # filter
-            print("Step 2: Filtering all mutated mols")
+            print("Step 2: Applying filter to all mutated molecules.")
             time1 = time.time()
             cmd_filter = [os.path.join(os.getenv("SECSE"), "growing", "filter_parallel.sh"), self.workdir_now,
                           str(self.gen), self.config_path, str(self.cpu_num)]
@@ -210,7 +242,13 @@ class Grow(object):
             print("Filter runtime: {:.2f} min.".format((time2 - time1) / 60))
 
             # do not sample or clustering if generated molecules less than wanted size
-            self._filter_df = pd.read_csv(os.path.join(self.workdir_now, "filter.csv"), header=None)
+            try:
+                self._filter_df = pd.read_csv(os.path.join(self.workdir_now, "filter.csv"), header=None)
+            except pd.errors.EmptyDataError:
+                self.growing_flag = self._GROWING_STATE_LIST[1]
+                print("No molecules met the filter criteria. Please adjust your configuration.")
+                self.check_growing()
+
             self._filter_df.columns = header + ["flag"]
             self._filter_df["type"] = self._filter_df["reaction_id_gen_" + str(self.gen)].apply(
                 lambda x: "-".join(x.split("-")[:2]))
@@ -225,7 +263,7 @@ class Grow(object):
                 # self._sampled_df = sample_by_similarity(self.gen, self._filter_df, self.workdir_now, self.num_per_gen)
                 print("Step 4: Clustering")
                 # clustering
-                num_clusters = int(self.num_per_gen / 5)
+                num_clusters = int(self.num_per_gen / 5) + 1
                 self._sampled_df = clustering(self._sampled_df, "smiles_gen_" + str(self.gen), self.gen, self.cpu_num,
                                               num_clusters)
 
@@ -252,3 +290,6 @@ class Grow(object):
         if self.dl_mode == 2:
             step += 1
             self.dl_pre(step)
+
+        self.growing_flag = self._GROWING_STATE_LIST[2]
+        self.check_growing()

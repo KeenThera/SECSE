@@ -22,6 +22,7 @@ from scoring.ranking import read_dock_file
 from utilities.function_helper import shell_cmd_execute
 
 pandarallel.initialize(verbose=0)
+SELECT_SDF_SHELL = os.path.join(os.getenv("SECSE"), "report", "filter_sdf_by_titles.pl")
 
 
 def cal_mutation_dic(workdir, max_gen):
@@ -114,28 +115,28 @@ def charge_filter(mol):
 def grep_sdf(workdir, merge_file):
     merged_sdf = os.path.join(workdir, "merged_all.sdf")
     selected_sdf = os.path.join(workdir, "selected.sdf")
+    ids_txt = os.path.join(workdir, "seleted_ids.txt")
     # merge all sdf
     cmd_merge = ["find", workdir, "-name \"docking_outputs_with_score.sdf\" | xargs cat >", merged_sdf]
     shell_cmd_execute(cmd_merge)
     # create ids
     df = pd.read_csv(merge_file)
     ids = list(set(df["id"].apply(lambda x: x.split("-dp")[0])))
+    # write ids
+    with open(ids_txt, "w") as ids_out:
+        [ids_out.write(i + "\n") for i in ids]
     # subset sdf
-    trak = False
-    with open(merged_sdf, "r") as sdf:
-        with open(selected_sdf, "w") as sel_sdf:
-            for line in sdf.readlines():
-                if trak is False:
-                    if line.strip() in ids:
-                        sel_sdf.write(line)
-                        trak = True
-                elif trak:
-                    sel_sdf.write(line)
-                    if "$$$$" in line:
-                        trak = False
+    cmd_filter_sdf = ["perl", SELECT_SDF_SHELL, merged_sdf, ids_txt, selected_sdf]
+    shell_cmd_execute(cmd_filter_sdf)
+    # remove temporary file
+    os.remove(ids_txt)
+    os.remove(merged_sdf)
 
 
-def write_growth(max_gen: int, workdir: str, dl_mode: int, config_path: str):
+def write_growth(config_path: str, max_gen: int, dl_mode: int):
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    workdir = config.get("DEFAULT", "workdir")
     now = str(int(time.time()))
     file_path = os.path.join(workdir, "merged_docked_best_" + now + ".csv")
     merge_multi_generation(workdir, max_gen, file_path, dl_mode, config_path)
@@ -175,13 +176,16 @@ def write_growth(max_gen: int, workdir: str, dl_mode: int, config_path: str):
     print("Output file: ", final_file)
     print("*" * 100)
 
+    # remove temporary files
+    os.remove(file_path)
+    os.remove(new_file)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="SCESE -- find path")
+    parser.add_argument("config_path", help="config file path", type=str)
     parser.add_argument("max_gen", help="Max number of generation.", type=int)
-    parser.add_argument("workdir", help="Workdir")
     parser.add_argument("dl_mode",
                         help="Mode of deep learning modeling, 0: not use, 1: modeling per generation, 2: modeling overall after all the generation")
-    parser.add_argument("config_path", help="config file path", type=str)
     args = parser.parse_args()
-    write_growth(args.max_gen, args.workdir, args.dl_mode, args.config_path)
+    write_growth(args.config_path, args.max_gen, args.dl_mode)

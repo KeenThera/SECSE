@@ -111,7 +111,7 @@ def get_bridged_atoms(mol):
     return bridged_atoms
 
 
-def get_rotatable_bound_num(mol):
+def get_keen_rotatable_bound_num(mol):
     rb_smarts = Chem.MolFromSmarts(
         '[C^3!D1;!$(C(F)(F)F)]-!@[!Br!F!Cl!I!H3&!$(*#*)!D1;!$([!Br!F!Cl!I](F)(F)F)]')
     # sma = '[C^3!D1;!$(C(F)(F)F);!R;!$(C=O(N));!$(NC(=O));!$(C(=O)O);!$(C(=O)O)]-!@[!Br!F!Cl!I!H3&!$(*#*)!D1;!$([!Br!F!Cl!I](F)(F)F);!R;!$(C=O([N,O]));!$(NC(=O));!$(C(=O)O)]'

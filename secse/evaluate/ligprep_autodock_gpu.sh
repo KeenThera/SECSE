@@ -20,7 +20,24 @@ pdb_dir=$workdir/pdb_files
 sdf_dir=$workdir/sdf_files
 
 cd "$workdir" || exit
-mkdir -p "$split_dir" "$docking_dir" "$lig_dir" "$pdb_dir" "$sdf_dir"
+
+create_clean_directory() {
+  dir_name=$1
+  if [ -d "$dir_name" ]; then
+    echo "Directory $dir_name already exists, removing $dir_name ..."
+    rm -rf "$dir_name"
+  fi
+  if mkdir "$dir_name"; then
+    return 0
+  else
+    echo "Creating directory failed: $dir_name"
+    return 1
+  fi
+}
+for dir in "$split_dir" "$docking_dir" "$lig_dir" "$pdb_dir" "$sdf_dir"; do
+  create_clean_directory "$dir"
+done
+
 # split by line
 split -l 100 -d "$smi" "$split_dir"/part --additional-suffix ".smi"
 

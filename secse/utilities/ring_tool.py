@@ -152,12 +152,12 @@ class RingSystems(object):
                     return False
         return True
 
-    def ring_check(self):
-        return all([self.largest_ring_system_size_filter(),
-                    self.largest_bridged_site_filter(),
-                    self.largest_spiro_site_filter(),
-                    self.largest_fused_site_filter(),
-                    self.ring_system_count_filter(),
+    def ring_check(self, rssc, bsc, ssc, fsc, rsc):
+        return all([self.largest_ring_system_size_filter(rssc),
+                    self.largest_bridged_site_filter(bsc),
+                    self.largest_spiro_site_filter(ssc),
+                    self.largest_fused_site_filter(fsc),
+                    self.ring_system_count_filter(rsc),
                     self.bridged_atom_is_aromatic_filter()])
 
 

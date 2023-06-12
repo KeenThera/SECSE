@@ -24,6 +24,7 @@ for i in *.csv; do
   echo "$i" | parallel grep PASS
 done >"${workdir}"/filter.csv
 cd "${workdir}" || exit
-rm -r filter_flag/ generation_split_by_seed/ mutation.csv mutation.raw generation.raw
+rm -r filter_flag/
+rm -r generation_split_by_seed/ mutation.csv mutation.raw generation.raw
 duration=$SECONDS
 echo "Filter runtime: $((duration / 60)) minutes $((duration % 60)) seconds."

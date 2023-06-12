@@ -5,6 +5,7 @@
 @file: ranking.py 
 @time: 2020/11/04/13:35
 """
+import pandas as pd
 from rdkit.Chem import PandasTools
 from scoring.diversity_score import *
 import numpy as np
@@ -60,9 +61,15 @@ class Ranking(object):
         self.keep_mols = None
 
         self.load_sdf()
+        self.ranking_flag = True
         if self.gen > 0:
-            self.filter_rmsd_docking_score()
-        self.cal_le_rank()
+            if self.filter_rmsd_docking_score():
+                self.cal_le_rank()
+            else:
+                self.ranking_flag = False
+                print("No molecule left, stopping generation.")
+        elif self.gen == 0:
+            self.cal_le_rank()
 
         self.size = min(config.getint("DEFAULT", "seed_per_gen"), self.docked_df.shape[0])
 
@@ -127,11 +134,14 @@ class Ranking(object):
 
         # keep same binding mode (RMSD < 2A and delta evaluate score < -0.3) or
         # find a better binding mode (delta evaluate score < -1.2kcal )
-
-        print("{} cmpds before RMSD/Docking Score fliter".format(self.docked_df.shape[0]))
+        print("{} cmpds before RMSD/Docking Score filter".format(self.docked_df.shape[0]))
         self.docked_df = self.docked_df[(self.docked_df["delta_docking_score"] <= self.delta_docking_score) | (
                 (self.docked_df["rmsd"] <= self.RMSD) & (self.docked_df["delta_docking_score"] <= -0.2))]
-        print("{} cmpds after RMSD/Docking Score fliter".format(self.docked_df.shape[0]))
+        rest_cmpds = self.docked_df.shape[0]
+        print("{} cmpds after RMSD/Docking Score filter".format(rest_cmpds))
+        if rest_cmpds == 0:
+            return False
+        return True
 
     def cal_le_rank(self):
         # calculate ln LE and fitness rank

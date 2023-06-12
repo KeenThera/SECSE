@@ -10,26 +10,25 @@ import os
 import sys
 import time
 import configparser
-
-sys.path.append(os.getenv("SECSE"))
-
 import rdkit.Chem as Chem
-from rdkit.Chem.rdMolDescriptors import CalcExactMolWt, CalcNumHBD, CalcNumHBA
+from rdkit.Chem.rdMolDescriptors import CalcExactMolWt, CalcNumHBD, CalcNumHBA, CalcNumRotatableBonds
 from rdkit.Chem import Descriptors, AllChem
 from rdkit.Chem import QED
 from rdkit.Chem import RDConfig
 import json
 
-sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
-import sascorer
-
+sys.path.append(os.getenv("SECSE"))
 from utilities.ring_tool import RingSystems
 from utilities.substructure_filter import StructureFilter
-from utilities.wash_mol import wash_mol, neutralize, charge_mol, get_rotatable_bound_num, get_rigid_body_num
+from utilities.wash_mol import wash_mol, neutralize, charge_mol, get_keen_rotatable_bound_num, get_rigid_body_num
+
+sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
+import sascorer
 
 
 class Filter:
     def __init__(self, gen, config_path):
+
         self.gen = int(gen)
         self.input_smiles = None
         self.mol = None
@@ -38,14 +37,26 @@ class Filter:
 
         config = configparser.ConfigParser()
         config.read(config_path)
-        print(config_path)
         self.MW = config.getfloat("properties", "MW")
         self.logP_lower = config.getfloat("properties", "logP_lower")
         self.logP_upper = config.getfloat("properties", "logP_upper")
         self.chiral_center = config.getint("properties", "chiral_center")
         self.heteroatom_ratio = config.getfloat("properties", "heteroatom_ratio")
-        self.rotatable_bound_num = config.getint("properties", "rotatable_bound_num")
+        self.rdkit_rotatable_bound_num = config.getint("properties", "rdkit_rotatable_bound_num")
+        self.keen_rotatable_bound_num = config.getint("properties", "keen_rotatable_bound_num")
         self.rigid_body_num = config.getint("properties", "rigid_body_num")
+        self.hbd = config.getint("properties", "HBD")
+        self.hba = config.getint("properties", "HBA")
+        self.tpsa = config.getfloat("properties", "TPSA")
+        self.lipinski_violation = config.getint("properties", "lipinski_violation")
+        self.qed = config.getfloat("properties", "qed")
+        self.max_ring_size = config.getint("properties", "max_ring_size")
+        self.max_ring_system_size = config.getint("properties", "max_ring_system_size")
+        self.ring_system_count = config.getint("properties", "ring_system_count")
+        self.bridged_site_count = config.getint("properties", "bridged_site_count")
+        self.spiro_site_count = config.getint("properties", "spiro_site_count")
+        self.fused_site_count = config.getint("properties", "fused_site_count")
+        self.rdkit_sa_score = config.getint("properties", "rdkit_sa_score")
 
     def load_mol(self, input_smiles):
         self.clean()
@@ -67,49 +78,51 @@ class Filter:
         self.input_smiles = None
         self.mol = None
 
-    def lipinski_filter(self):
-        mol = Chem.MolFromSmiles(self.input_smiles)
-        violation_counter = 0
-
-        if CalcExactMolWt(mol) >= 500:
-            violation_counter += 1
-
-        if CalcNumHBD(mol) >= 5:
-            violation_counter += 1
-
-        if CalcNumHBA(mol) >= 10:
-            violation_counter += 1
-
-        if Descriptors.MolLogP(mol) > 5:
-            violation_counter += 1
-
-        return violation_counter < 2
-
     def pp_filter(self):
         """
         property filter
         """
-        mw = CalcExactMolWt(self.mol)
+        violation_counter = 0
 
+        mw = CalcExactMolWt(self.mol)
         if mw > self.MW:
             yield "MW"
+        if mw > 500:
+            violation_counter += 1
         if self.gen > 3:
             if 81 > mw:
                 yield "MW"
-        if CalcNumHBD(self.mol) > 5:
+
+        mol_hbd = CalcNumHBD(self.mol)
+        if mol_hbd > self.hbd:
             yield "HBD"
-        if CalcNumHBA(self.mol) > 10:
+        if mol_hbd > 5:
+            violation_counter += 1
+
+        mol_hba = CalcNumHBA(self.mol)
+        if mol_hba > self.hba:
             yield "HBA"
+        if mol_hba > 10:
+            violation_counter += 1
 
         logp = Descriptors.MolLogP(self.mol)
         if logp < self.logP_lower or logp > self.logP_upper:
             yield "cLogP"
+        if logp > 5:
+            violation_counter += 1
 
-        if Descriptors.TPSA(self.mol) > 200:
+        if violation_counter > self.lipinski_violation:
+            yield "Lipinski Violation"
+
+        if Descriptors.TPSA(self.mol) > self.tpsa:
             yield "TPSA"
-        if get_rotatable_bound_num(self.mol) > self.rotatable_bound_num:
+
+        if CalcNumRotatableBonds(self.mol) > self.rdkit_rotatable_bound_num:
+            yield "RDKit Rotatable Bonds"
+
+        if get_keen_rotatable_bound_num(self.mol) > self.keen_rotatable_bound_num:
             # rotatable bound customized @dalong
-            yield "Rotatable Bound"
+            yield "Keen Rotatable Bounds"
         if get_rigid_body_num(self.mol) > self.rigid_body_num:
             # rotatable bound customized @dalong
             yield "Rigid Body"
@@ -137,7 +150,7 @@ class Filter:
         i_count = self.input_smiles.count("I")
         s_count = self.input_smiles.count("S") + self.input_smiles.count("s")
         p_count = self.input_smiles.count("P")
-        if not all([f_count <= 5, br_count < 3, cl_count <= 3, i_count <= 1, s_count <= 2, p_count <= 1]):
+        if not all([f_count <= 5, br_count <= 2, cl_count <= 3, i_count <= 1, s_count <= 2, p_count <= 1]):
             yield "element"
         yield "PASS"
 
@@ -147,7 +160,8 @@ class Filter:
 
     def ring_system_filter(self):
         ring_sys = RingSystems(self.mol)
-        if ring_sys.ring_check():
+        if ring_sys.ring_check(self.max_ring_system_size, self.bridged_site_count, self.spiro_site_count,
+                               self.fused_site_count, self.ring_system_count):
             yield "PASS"
         yield "RS"
 
@@ -163,9 +177,9 @@ class Filter:
 
         if rings:
             # the maximum of ring size <= 7
-            max_ring_size = max([len(x) for x in rings])
-            if max_ring_size > 7:
-                yield "max ring size >7"
+            mol_max_ring_size = max([len(x) for x in rings])
+            if mol_max_ring_size > self.max_ring_size:
+                yield "max ring size"
 
             if len(chiral_tags) == 3:
                 # 3 CCs should not in the same ring
@@ -202,19 +216,19 @@ class Filter:
     def similarity_filter(self):
         fp = AllChem.GetMorganFingerprintAsBitVect(self.mol, 2, 512)
 
-
     def QED_filter(self):
-        if QED.qed(self.mol) > 0.5:
+        if QED.qed(self.mol) >= self.qed:
             yield "PASS"
         else:
             yield "QED"
 
     def SA_filter(self):
         sa_score = sascorer.calculateScore(self.mol)
-        if sa_score < 5:
+        if sa_score <= self.rdkit_sa_score:
             yield "PASS"
         else:
             yield "SA score"
+
 
 def mol_filter(molfilter: Filter, smi):
     molfilter.load_mol(smi)
