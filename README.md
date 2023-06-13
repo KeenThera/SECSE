@@ -30,18 +30,18 @@ further validation.
     git clone https://github.com/KeenThera/SECSE.git 
    ```
 3. Setting Environment Variables  
-   `export SECSE=/path/to/SECSE`  
+   `export SECSE=/absolute/path/to/SECSE`  
    I'm using AutoDock Vina for docking:
    [(download here)](https://github.com/ccsb-scripps/AutoDock-Vina/releases)  
-   `export VINA=/path/to/AutoDockVINA`  
+   `export VINA=/absolute/path/to/AutoDockVINA`  
    I'm using AutoDock GPU: (adgpu-v1.5.3_linux_ocl_128wi)
    [(download here)](https://github.com/ccsb-scripps/AutoDock-GPU/releases)  
-   `export AUTODOCK_GPU=/path/to/AutoDockGPU`  
+   `export AUTODOCK_GPU=/absolute/path/to/AutoDockGPU`  
    I'm using [Gilde](https://www.schrodinger.com/products/glide) for docking (additional installation & license
    required):  
-   `export SCHRODINGER=/path/to/SCHRODINGER`
+   `export SCHRODINGER=/absolute/path/to/SCHRODINGER`
 4. Giving execution permissions to the SECSE directory  
-   `chmod -R +x /path/to/SECSE`
+   `chmod -R +x /absolute/path/to/SECSE`
 5. Input fragments: a tab separated _.smi_ file without header. See demo [here](demo/demo_1020.smi).
 6. Parameters in config file:
 
@@ -120,8 +120,8 @@ further validation.
    G-001-0001, G-001-0002, G-001-0003 ...
 
 7. Run SECSE  
-   `python $SECSE/run_secse.py --config /path/to/config`  
-   Please input the absolute path of the config file here.
+   `python $SECSE/run_secse.py --config /absolute/path/to/config`  
+   Please input the **absolute path** of the config file here.
 8. Output files
     - merged_docked_best_timestamp_with_grow_path.csv: selected molecules and growing path
     - selected.sdf: 3D conformers of all selected molecules
