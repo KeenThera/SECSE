@@ -33,10 +33,17 @@ class Filter:
         self.input_smiles = None
         self.mol = None
         self.pains_smarts = None
-        self.strutFilter = StructureFilter()
 
         config = configparser.ConfigParser()
         config.read(config_path)
+
+        substructure_filter_file = config.get("properties", "substructure_filter")
+        if substructure_filter_file == "0":
+            self.strutFilter = StructureFilter()
+        else:
+            # print("Use additional substructure filter patters.")
+            self.strutFilter = StructureFilter(substructure_filter_file)
+
         self.MW = config.getfloat("properties", "MW")
         self.logP_lower = config.getfloat("properties", "logP_lower")
         self.logP_upper = config.getfloat("properties", "logP_upper")
@@ -143,19 +150,7 @@ class Filter:
                 yield "PAINS"
         yield "PASS"
 
-    def element_filter(self):
-        f_count = self.input_smiles.count("F")
-        br_count = self.input_smiles.count("Br")
-        cl_count = self.input_smiles.count("Cl")
-        i_count = self.input_smiles.count("I")
-        s_count = self.input_smiles.count("S") + self.input_smiles.count("s")
-        p_count = self.input_smiles.count("P")
-        if not all([f_count <= 5, br_count <= 2, cl_count <= 3, i_count <= 1, s_count <= 2, p_count <= 1]):
-            yield "element"
-        yield "PASS"
-
     def substructure_filter(self):
-        # self.element_filter()
         yield self.strutFilter.sfilter(self.mol)
 
     def ring_system_filter(self):

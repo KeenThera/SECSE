@@ -20,7 +20,7 @@ further validation.
 ----------------------------
 
 1. Setting up dependencies  
-    python ~=3.9, perl ~=5.32
+   python ~=3.9, perl ~=5.32
     ```bash
     conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.09
     conda activate secse
@@ -114,6 +114,10 @@ further validation.
     - _spiro_site_count_, maximum of spiro ring site count, default=1, type=int
     - _fused_site_count_, maximum of fused ring site count, default=3, type=int
     - _rdkit_sa_score_, synthetic accessibility score (calculated by RDKit) cutoff, default=5, type=float
+    - _substructure_filter_, files containing the customized unwanted substructure SMARTS in "*.xls" format, set the
+      value to 0 if you do not have any additional unwanted substructure. PANIS already includes as default. The file
+      should include columns for **`Pattern`**,  **`ID`**, and **`Max`**, where the **`ID`** should be unique for each SMARTS. You can
+      refer to the example file [subtructure_filter_demo.xls](demo/subtructure_filter_demo.xls), default=0, type=string
 
    Config file of a demo case [phgdh_demo_vina.ini](demo/phgdh_demo_vina.ini)  
    Customized rule json template [rules.json](demo/rules.json). Rule ID should be in the form G-001-XXXX, like
@@ -139,7 +143,8 @@ GNU Parallel installation
 
 python ~=3.9, perl ~=5.32
 
-numpy~=1.24.3, pandas~=1.3.3, xlrd～=2.0.1, pandarallel~=1.5.2, tqdm~=4.65.0, biopandas~=0.4.1, openbabel~=3.1.1, rdkit~=2022.09, chemprop~=1.5.2, pytorch~=2.0.0+cu117
+numpy~=1.24.3, pandas~=1.3.3, xlrd～=2.0.1, pandarallel~=1.5.2, tqdm~=4.65.0, biopandas~=0.4.1, openbabel~=3.1.1, rdkit~
+=2022.09, chemprop~=1.5.2, pytorch~=2.0.0+cu117
 
 Linux server with CPUs only also works.
 

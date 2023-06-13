@@ -9,13 +9,13 @@ import os
 import pandas as pd
 from rdkit import Chem
 
-FILTER_FILE = "Structure Filter_20211015_v1.12.xls"
+FILTER_FILE = os.path.join(os.getenv("SECSE"), "utilities", "Structure Filter_20211015_v1.12.xls")
 
 
 class StructureFilter:
-    def __init__(self):
-        df = pd.read_excel(os.path.join(os.getenv("SECSE"), "utilities", FILTER_FILE),
-                           usecols=["Pattern", "ID", "Max"]).dropna()
+    def __init__(self, filter_lst=FILTER_FILE):
+        df = pd.read_excel(filter_lst, usecols=["Pattern", "ID", "Max"]).dropna()
+        df["ID"] = df["ID"].astype(str)
         df = df.set_index("ID")
         df["Pattern_sma"] = df["Pattern"].apply(lambda x: Chem.MolFromSmarts(x))
         self.fdic = df[["Pattern_sma", "Max"]].T.to_dict()
