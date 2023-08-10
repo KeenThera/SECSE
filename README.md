@@ -148,7 +148,7 @@ GNU Parallel installation
 python ~=3.9, perl ~=5.32
 
 numpy~=1.24.3, pandas~=1.3.3, xlrd～=2.0.1, pandarallel~=1.5.2, tqdm~=4.65.0, biopandas~=0.4.1, openbabel~=3.1.1, rdkit~
-=2022.09, chemprop~=1.5.2, pytorch~=2.0.0+cu117
+=2022.09, chemprop~=1.5.2, pytorch~=2.0.0+cu117 plip=2.2.2  
 
 Linux server with CPUs only also works.
 
