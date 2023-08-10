@@ -13,6 +13,8 @@ import sys
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from utilities.function_helper import shell_cmd_execute
+from growing.binding import hbond_filter
+from growing.binding import bsa_filter
 
 sys.path.append(os.getenv("SECSE"))
 
@@ -23,6 +25,9 @@ AUTODOCK_GPU_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_autod
 def dock_by_py_vina(workdir, smi, receptor, cpu_num, x, y, z, box_size_x=20, box_size_y=20, box_size_z=20):
     cmd = list(map(str, [VINA_SHELL, workdir, smi, receptor, x, y, z, box_size_x, box_size_y, box_size_z, cpu_num]))
     shell_cmd_execute(cmd)
+    # add 2023.0809
+    # pose_selection_by_hbond(workdir, receptor)
+    pose_selection_by_bsa(workdir, receptor)
     merged_sdf(workdir, 0)
 
 
@@ -43,6 +48,32 @@ def merged_sdf(workdir, program):
     shutil.rmtree(os.path.join(workdir, "ligands_for_docking"))
     shutil.rmtree(os.path.join(workdir, "docking_poses"))
     shutil.rmtree(os.path.join(workdir, "docking_split"))
+
+
+# add hbond filter and bsa filter for docking pose selection
+# modified by shien 2023.0809
+def pose_selection_by_hbond(workdir, receptor):
+    files = os.listdir(os.path.join(workdir, "pdb_files"))
+    for i in files:
+        raw_id = i.rsplit("-dp", 1)[0]
+        pdb_path = os.path.join(workdir, "pdb_files", i)
+        myhbondfiler = hbond_filter.HbondFilter(raw_id, pdb_path, receptor)
+        if not myhbondfiler.hbondFilter():
+            os.remove(pdb_path)
+        else:
+            pass
+
+
+def pose_selection_by_bsa(workdir, receptor):
+    files = os.listdir(os.path.join(workdir, "pdb_files"))
+    for i in files:
+        # raw_id = i.rsplit("-dp", 1)[0]
+        pdb_path = os.path.join(workdir, "pdb_files", i)
+        myBSA = bsa_filter.BsaFilter("6rj3", receptor, pdb_path)
+        if not myBSA.bsa_filter():
+            os.remove(pdb_path)
+        else:
+            pass
 
 
 def check_mols(workdir, program):

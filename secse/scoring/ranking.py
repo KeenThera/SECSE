@@ -10,6 +10,7 @@ from rdkit.Chem import PandasTools
 from scoring.diversity_score import *
 import numpy as np
 import os
+import sys
 import configparser
 from pandarallel import pandarallel
 
@@ -74,6 +75,11 @@ class Ranking(object):
         self.size = min(config.getint("DEFAULT", "seed_per_gen"), self.docked_df.shape[0])
 
     def load_sdf(self):
+        # add check sdf, if no records in sdf, just quit
+        #
+        if os.path.getsize(self.sdf) == 0:
+            print("No molecule record in sdf")
+            sys.quit()
         raw_df = PandasTools.LoadSDF(self.sdf, smilesName='smiles', molColName='Molecule')[
             ["ID", "Molecule", "smiles", "docking score"]]
         raw_df["docking score"] = raw_df["docking score"].astype(float)
