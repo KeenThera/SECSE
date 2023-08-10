@@ -22,7 +22,7 @@ further validation.
 1. Setting up dependencies  
    python ~=3.9, perl ~=5.32
     ```bash
-    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.09
+    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.09 plip=2.2.2 
     conda activate secse
    ```
 2. Installing from source
@@ -31,19 +31,23 @@ further validation.
    ```
 3. Setting Environment Variables  
    `export SECSE=/absolute/path/to/SECSE`  
-   I'm using AutoDock Vina for docking:
+   To include the dr_sasa in the PATH  
+   [(Get Information here)](https://github.com/nioroso-x3/dr_sasa_n)  
+   `export PATH=$SECSE/growing/binding:$PATH`  
+   I 'd like using AutoDock Vina for docking:
    [(download here)](https://github.com/ccsb-scripps/AutoDock-Vina/releases)  
    `export VINA=/absolute/path/to/AutoDockVINA`  
-   I'm using AutoDock GPU: (adgpu-v1.5.3_linux_ocl_128wi)
+   I'd like using AutoDock GPU: (adgpu-v1.5.3_linux_ocl_128wi)
    [(download here)](https://github.com/ccsb-scripps/AutoDock-GPU/releases)  
    `export AUTODOCK_GPU=/absolute/path/to/AutoDockGPU`  
-   I'm using [Gilde](https://www.schrodinger.com/products/glide) for docking (additional installation & license
+   I'd like using [Gilde](https://www.schrodinger.com/products/glide) for docking (additional installation & license
    required):  
    `export SCHRODINGER=/absolute/path/to/SCHRODINGER`
-4. Giving execution permissions to the SECSE directory  
+   
+5. Giving execution permissions to the SECSE directory  
    `chmod -R +x /absolute/path/to/SECSE`
-5. Input fragments: a tab separated _.smi_ file without header. See demo [here](demo/demo_1020.smi).
-6. Parameters in config file:
+6. Input fragments: a tab separated _.smi_ file without header. See demo [here](demo/demo_1020.smi).
+7. Parameters in config file:
 
    [DEFAULT]
 
@@ -123,10 +127,10 @@ further validation.
    Customized rule json template [rules.json](demo/rules.json). Rule ID should be in the form G-001-XXXX, like
    G-001-0001, G-001-0002, G-001-0003 ...
 
-7. Run SECSE  
+8. Run SECSE  
    `python $SECSE/run_secse.py --config /absolute/path/to/config`  
    Please input the **absolute path** of the config file here.
-8. Output files
+9. Output files
     - merged_docked_best_timestamp_with_grow_path.csv: selected molecules and growing path
     - selected.sdf: 3D conformers of all selected molecules
 
