@@ -21,6 +21,7 @@ sys.path.append(os.getenv("SECSE"))
 from utilities.ring_tool import RingSystems
 from utilities.substructure_filter import StructureFilter
 from utilities.wash_mol import wash_mol, neutralize, charge_mol, get_keen_rotatable_bound_num, get_rigid_body_num
+from utilities.open_filter import user_filter
 
 sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
 import sascorer
@@ -224,6 +225,13 @@ class Filter:
         else:
             yield "SA score"
 
+    def my_filter(self):
+        tag = user_filter(self.mol)
+        if tag:
+            yield "PASS"
+        else:
+            yield "CUSTOM"
+
 
 def mol_filter(molfilter: Filter, smi):
     molfilter.load_mol(smi)
@@ -236,6 +244,7 @@ def mol_filter(molfilter: Filter, smi):
                    molfilter.alert_filter(),
                    molfilter.QED_filter(),
                    molfilter.SA_filter(),
+                   molfilter.my_filter()
                    ]
     for i in pass_filter:
         res = next(i)
