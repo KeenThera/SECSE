@@ -226,11 +226,14 @@ class Filter:
             yield "SA score"
 
     def my_filter(self):
-        tag = user_filter(self.mol)
-        if tag:
-            yield "PASS"
+        if self.gen > 3:
+            tag = user_filter(self.mol)
+            if tag:
+                yield "PASS"
+            else:
+                yield "CUSTOM"
         else:
-            yield "CUSTOM"
+            yield "PASS"
 
 
 def mol_filter(molfilter: Filter, smi):
