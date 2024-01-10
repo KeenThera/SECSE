@@ -196,6 +196,8 @@ class Filter:
         positive_charge = Chem.MolFromSmarts("[*+1]")
         charged_smi = charge_mol(self.input_smiles)
         mol = Chem.MolFromSmiles(charged_smi)
+        if mol is None:
+            mol = Chem.MolFromSmiles(self.input_smiles)
         nc = len(mol.GetSubstructMatches(negative_charge))
         pc = len(mol.GetSubstructMatches(positive_charge))
         npc = nc + pc
