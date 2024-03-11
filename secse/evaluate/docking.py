@@ -18,6 +18,7 @@ sys.path.append(os.getenv("SECSE"))
 
 VINA_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_vina_parallel.sh")
 AUTODOCK_GPU_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_autodock_gpu.sh")
+UNIDOCK_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_unidock.sh")
 
 
 def dock_by_py_vina(workdir, smi, receptor, cpu_num, x, y, z, box_size_x=20, box_size_y=20, box_size_z=20):
@@ -30,6 +31,13 @@ def dock_by_py_autodock_gpu(workdir, smi, receptor, cpu_num, gpu_num):
     cmd = list(map(str, [AUTODOCK_GPU_SHELL, workdir, smi, receptor, cpu_num, gpu_num]))
     shell_cmd_execute(cmd)
     merged_sdf(workdir, 1)
+
+def dock_by_unidock(workdir, smi, receptor, cpu_num, x, y, z, box_size_x=20, box_size_y=20, box_size_z=20):
+    if not os.environ.get("UNIDOCK"):
+        os.environ["UNIDOCK"] = "unidock"
+    cmd = list(map(str, [UNIDOCK_SHELL, workdir, smi, receptor, x, y, z, box_size_x, box_size_y, box_size_z, cpu_num]))
+    shell_cmd_execute(cmd)
+    merged_sdf(workdir, 2)
 
 
 def merged_sdf(workdir, program):
@@ -61,7 +69,7 @@ def check_mols(workdir, program):
                 continue
             new = Chem.AddHs(new, addCoords=True)
             Chem.MolToMolFile(new, sdf_path)
-            if program == 0:
+            if program == 0 or program == 2:
                 with open(pdb_path, "r") as pdb:
                     for line in pdb.readlines():
                         if line.startswith("REMARK VINA RESULT"):

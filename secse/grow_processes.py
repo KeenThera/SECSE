@@ -17,7 +17,7 @@ from scoring.ranking import Ranking
 from scoring.diversity_score import clustering
 from scoring.docking_score_prediction import prepare_files
 from scoring.sampling import sample_by_similarity, sample_by_rule_weight
-from evaluate.docking import dock_by_py_vina, dock_by_py_autodock_gpu
+from evaluate.docking import dock_by_py_vina, dock_by_py_autodock_gpu, dock_by_unidock
 from report.grow_path import write_growth
 from utilities.load_rules import json_to_DB
 from utilities.function_helper import shell_cmd_execute
@@ -93,6 +93,8 @@ class Grow(object):
             self.docking_glide(step)
         elif "autodock-gpu" in self.docking_program:
             self.docking_autodock_gpu(step)
+        elif "unidock" in self.docking_program:
+            self.docking_unidock(step)
 
         # ranking and find top fragments
         self.lig_sdf = os.path.join(self.workdir_now, "docking_outputs_with_score.sdf")
@@ -116,6 +118,11 @@ class Grow(object):
         else:
             dock_mode = "HTVS"
         dock_by_glide(self.workdir_now, self.mols_smi, self.target, self.gen, dock_mode, self.cpu_num)
+
+    def docking_unidock(self, step):
+        print("Step {}: Docking with UniDock ...".format(step))
+        dock_by_unidock(self.workdir_now, self.mols_smi, self.target, self.cpu_num, self.x, self.y, self.z,
+                        self.box_size_x, self.box_size_y, self.box_size_z)
 
     def ranking_docked_mols(self, step=2):
         print("Step {}: Ranking docked molecules...".format(str(step)))
