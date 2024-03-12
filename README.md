@@ -39,7 +39,9 @@ further validation.
    `export AUTODOCK_GPU=/absolute/path/to/AutoDockGPU`  
    I'm using [Gilde](https://www.schrodinger.com/products/glide) for docking (additional installation & license
    required):  
-   `export SCHRODINGER=/absolute/path/to/SCHRODINGER`
+   `export SCHRODINGER=/absolute/path/to/SCHRODINGER`  
+   I'm using [Uni-Dock](https://github.com/dptech-corp/Uni-Dock) for docking (need GPU):  
+   [compile from Uni-Dock source code](https://github.com/dptech-corp/Uni-Dock/tree/main/unidock#building-from-source) (recommand), or [download here](https://github.com/dptech-corp/Uni-Dock/releases/download/1.1.0/unidock-1.1.0-cuda120-linux-x86_64) and add `export UNIDOCK=/absolute/path/to/UNIDOCK`
 4. Giving execution permissions to the SECSE directory  
    `chmod -R +x /absolute/path/to/SECSE`
 5. Input fragments: a tab separated _.smi_ file without header. See demo [here](demo/demo_1020.smi).
