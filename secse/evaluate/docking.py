@@ -8,6 +8,7 @@
 import argparse
 import os
 import shutil
+import glob
 import sys
 
 from rdkit import Chem
@@ -37,6 +38,9 @@ def dock_by_unidock(workdir, smi, receptor, cpu_num, x, y, z, box_size_x=20, box
         os.environ["UNIDOCK"] = "unidock"
     cmd = list(map(str, [UNIDOCK_SHELL, workdir, smi, receptor, x, y, z, box_size_x, box_size_y, box_size_z, cpu_num]))
     shell_cmd_execute(cmd)
+    for res_file in glob.glob(os.path.join(workdir, "pdb_files", "*.pdb")):
+        new_name = os.path.basename(res_file).replace("_out", "")
+        os.rename(res_file, os.path.join(workdir, "pdb_files", new_name))
     merged_sdf(workdir, 2)
 
 

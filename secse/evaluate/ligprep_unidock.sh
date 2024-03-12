@@ -60,7 +60,7 @@ $UNIDOCK --receptor $receptor --ligand_index $files --dir $docking_dir \
     --num_modes 3 --energy_range 3 --verbosity 2 >/dev/null
 rm $files
 
-find "$docking_dir" -name "*pdbqt" | parallel --jobs "$cpu_num" 'name_without_substring=$(echo {/.} | sed "s/_out//g"); obabel -ipdbqt {} -O "$pdb_dir/${name_without_substring}-dp.pdb" -m'
+find "$docking_dir" -name "*pdbqt" | parallel --jobs "$cpu_num" obabel -ipdbqt {} -O "$pdb_dir"/{/.}-dp.pdb -m &>/dev/null
 
 duration=$SECONDS
 echo "Docking runtime: $((duration / 60)) minutes $((duration % 60)) seconds."
