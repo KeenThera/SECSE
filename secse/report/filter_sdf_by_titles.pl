@@ -51,7 +51,7 @@ while ($buffer = <$in>) {
             $title_indices[$index] .= ",$numstructs";
         }
         # if the first structure starts with a newline, then strip the newline
-        if ($first_structure && $buffer =~ /^\n/) {
+        if ($index==$first_structure && $buffer =~ /^\n/) {
             $buffer =~ s/^\n//;
             $first_structure = 0;
         }
