@@ -143,7 +143,7 @@ class LigPrep:
     def parse_infile(self):
         with open(self.infile, "r") as inf:
             for line in inf:
-                tmp = line.strip().split("\t")
+                tmp = line.strip().split()
                 if len(tmp) < 2:
                     continue
                 smi = tmp[0]
