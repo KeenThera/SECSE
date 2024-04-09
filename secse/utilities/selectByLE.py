@@ -52,7 +52,7 @@ binCount = args.b
 def workflow():
 
     # Read the SDF file into a DataFrame
-    df = PandasTools.LoadSDF(sdfFile)
+    df = PandasTools.LoadSDF(sdfFile, removeHs=False)
     if idCol not in df.columns:
         print('Molecule ID column name is not detected', df.columns)
         quit()
