@@ -13,8 +13,25 @@ gridInputFile=$2 #gpf file
 # Please download autogrid4 from https://autodock.scripps.edu/download-autodock4/
 autogrid='/tools/docking/autodock/cpu/autogrid4'
 
+if [ ! -f ${autogrid} ]; then
+    echo ${autogrid}" is needed but does not exist!"
+    echo "
+    - Please download autogrid4 from https://autodock.scripps.edu/download-autodock4/
+    - Modify this script at line 14 to set the correct path of autogrid4
+    "
+    exit
+fi
+
 if [ ! $# -eq 2 ]; then #Test input parameter
     echo 'autogridGen.sh protein.pdbqt gpfFile'
+    echo
+    echo "grid.gpf.example is created for your reference."
+    echo "
+npts 70 70 70
+spacing 0.375
+gridcenter    17.510   29.510   32.520
+" > grid.gpf.example
+    cat grid.gpf.example
     exit
 fi
 npts=$(grep npts ${gridInputFile})
