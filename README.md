@@ -81,7 +81,7 @@ further validation.
     - _box_size_y_, Docking box size y, default=20, type=float
     - _box_size_z_, Docking box size z, default=20, type=float
 
-   [deep learning]
+   [prediction]
 
     - _mode_, mode of deep learning modeling, 0: not use, 1: modeling per generation, 2: modeling overall after all the
       generation, default=0, type=int
