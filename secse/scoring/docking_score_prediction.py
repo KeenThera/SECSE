@@ -13,7 +13,7 @@ import os
 import rdkit
 from rdkit import Chem
 from rdkit.Chem import PandasTools
-from rdkit.Chem import MolStandardize
+from rdkit.Chem.MolStandardize import rdMolStandardize
 from tqdm import tqdm
 from utilities.function_helper import shell_cmd_execute
 
@@ -84,7 +84,7 @@ def neutralize(smi):
         mol = Chem.MolFromSmiles(smi)
         if mol is None:
             return "C"
-    uc = MolStandardize.charge.Uncharger()
+    uc = rdMolStandardize.Uncharger()
     return Chem.MolToSmiles(uc.uncharge(mol))
 
 

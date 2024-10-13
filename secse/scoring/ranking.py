@@ -50,7 +50,7 @@ class Ranking(object):
         config = configparser.ConfigParser()
         config.read(config_file)
         self.docking_score_cutoff = config.getfloat("docking", "score_cutoff")
-        self.RMSD = config.getfloat("docking", "RMSD")
+        self.RMSD = config.getfloat("docking", "rmsd")
         self.delta_docking_score = config.getfloat("docking", "delta_score")
 
         self.docked_df = pd.DataFrame(None)
@@ -71,7 +71,7 @@ class Ranking(object):
         elif self.gen == 0:
             self.cal_le_rank()
 
-        self.size = min(config.getint("DEFAULT", "seed_per_gen"), self.docked_df.shape[0])
+        self.size = min(config.getint("general", "seed_per_gen"), self.docked_df.shape[0])
 
     def load_sdf(self):
         raw_df = PandasTools.LoadSDF(self.sdf, smilesName='smiles', molColName='Molecule')[

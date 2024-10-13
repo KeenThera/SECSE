@@ -55,7 +55,7 @@ def merge_multi_generation(workdir, max_gen, file_path, dl_mode, config_path):
         dl_df = dl_df.reindex(columns=df_lst[0].columns)
         config = configparser.ConfigParser()
         config.read(config_path)
-        score_cutoff = config.getfloat("deep learning", "dl_score_cutoff")
+        score_cutoff = config.getfloat("prediction", "dl_score_cutoff")
         dl_df = dl_df[dl_df["docking score"] < score_cutoff]
         df_lst.append(dl_df)
 
@@ -136,7 +136,7 @@ def grep_sdf(workdir, merge_file):
 def write_growth(config_path: str, max_gen: int, dl_mode: int):
     config = configparser.ConfigParser()
     config.read(config_path)
-    workdir = config.get("DEFAULT", "workdir")
+    workdir = config.get("general", "workdir")
     now = str(int(time.time()))
     file_path = os.path.join(workdir, "merged_docked_best_" + now + ".csv")
     merge_multi_generation(workdir, max_gen, file_path, dl_mode, config_path)

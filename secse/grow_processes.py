@@ -160,7 +160,7 @@ class Grow(object):
         config = configparser.ConfigParser()
         config.read(self.config_path)
 
-        dl_select_num = config.get("deep learning", "dl_per_gen")
+        dl_select_num = config.get("prediction", "dl_per_gen")
         dl_cmd = [dl_shell, self.workdir, train, pre, str(self.gen), dl_select_num, "22"]
         shell_cmd_execute(dl_cmd)
         # docking top predicted compounds

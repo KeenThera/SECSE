@@ -47,7 +47,7 @@ further validation.
 5. Input fragments: a tab separated _.smi_ file without header. See demo [here](demo/demo_1020.smi).
 6. Parameters in config file:
 
-   [DEFAULT]
+   [general]
 
     - _project_code_, project identifier, which will be prefixed to each generated molecule ID, type=str
     - _workdir_, working directory, create if not exists, otherwise overwrite, type=str
@@ -58,14 +58,14 @@ further validation.
       the number corresponding to the last **completed generation** in your previous run, default=0, type=int
     - _num_gen_, number of growing generations, the final generation number will be the sum of start_gen and num_gen,
       type=int
-    - _docking_program_, name of docking program, AutoDock-Vina (input vina) or AutoDock-GPU (input autodock-gpu) or
-      Glide (input glide) , default=vina, type=str
+    
     - _cpu_, number of max invoke CPUs, type=int
     - _gpu_, number of max invoke GPU for AutoDock GPU, type=int
     - _rule_db_, path to customized rule in json format, input 0 if use default rule, default=0
 
    [docking]
-
+    - _docking_program_, name of docking program, AutoDock-Vina (input vina) or AutoDock-GPU (input autodock-gpu) or
+      Glide (input glide) , default=vina, type=str
     - _target_, protein PDBQT if use AutoDock Vina; grid map files descriptor fld file if AutoDock GPU; Grid file if
       choose Glide, type=str
     - _RMSD_, docking pose RMSD cutoff between children and parent, default=2, type=float
@@ -90,9 +90,9 @@ further validation.
 
    [properties]
 
-    - _MW_, molecular weights cutoff, default=450, type=int
-    - _logP_lower_, minimum of logP, default=0.5, type=float
-    - _logP_upper_, maximum of logP, default=7, type=float
+    - _mw_, molecular weights cutoff, default=450, type=int
+    - _logp_lower_, minimum of logP, default=0.5, type=float
+    - _logp_upper_, maximum of logP, default=7, type=float
     - _chiral_center_, maximum of chiral center,default=2, type=int
     - _heteroatom_ratio_, maximum of heteroatom ratio, default=0.35, type=float
     - _rdkit_rotatable_bound_num_, maximum of rotatable bound calculated from
@@ -102,13 +102,13 @@ further validation.
     - _rigid_body_num_, maximum of rigid body defined by KEEN (
       SMARTS: "[C^3!D1;!$(C(F)(F)F);!R;!$(C=O(N));!$(NC(=O));!$(C(=O)O);!$(C(=O)O)]-!@[!Br!F!Cl!I!H3&!$(*#*)!
       D1;!$([!Br!F!Cl!I](F)(F)F);!R;!$(C=O([N,O]));!$(NC(=O));!$(C(=O)O)]"), default=2, type=int
-    - _HBD_, maximum of hydrogen bond donor calculated by rdkit.rdMolDescriptors.CalcNumHBD, default=5, type=int
-    - _HBA_, maximum of hydrogen bond acceptor calculated by rdkit.rdMolDescriptors.CalcNumHBA, default=10, type=int
-    - _TPSA_, maximum of topological polar surface area calculated by rdkit.Chem.Descriptors.TPSA, default=200,
+    - _hbd_, maximum of hydrogen bond donor calculated by rdkit.rdMolDescriptors.CalcNumHBD, default=5, type=int
+    - _hba_, maximum of hydrogen bond acceptor calculated by rdkit.rdMolDescriptors.CalcNumHBA, default=10, type=int
+    - _tpsa_, maximum of topological polar surface area calculated by rdkit.Chem.Descriptors.TPSA, default=200,
       type=float
     - _lipinski_violation_, maximum of violation of Lipinski rule of five calculated by RDKit, default=1, default=1,
       type=int
-    - _QED_, QED (calculated by rdkit.Chem.QED.qed) cutoff value, default=0.5, type=float
+    - _qed_, QED (calculated by rdkit.Chem.QED.qed) cutoff value, default=0.5, type=float
     - _max_ring_size_, maximum of ring size, default=7, type=int
     - _max_ring_system_size_, maximum of ring system member size in one ring system, default=3, type=int
     - _ring_system_count_, maximum of seperated ring system count, default=4, type=int
