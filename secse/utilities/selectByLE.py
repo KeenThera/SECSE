@@ -17,7 +17,7 @@ import time
 import pandas as pd
 from rdkit.Chem import PandasTools
 import numpy as np
-
+from loguru import logger
 
 startTime = time.time()
 '''
@@ -26,7 +26,7 @@ Zhenting has tracked this bug on 2/21/2020.
 '''
 pythonPath = os.__file__.split("lib")[0]
 os.environ['PATH'] = os.environ[
-    'PATH'] + os.pathsep + pythonPath + r'Library\bin' + os.pathsep
+                         'PATH'] + os.pathsep + pythonPath + r'Library\bin' + os.pathsep
 
 # import click
 
@@ -50,14 +50,13 @@ binCount = args.b
 
 
 def workflow():
-
     # Read the SDF file into a DataFrame
     df = PandasTools.LoadSDF(sdfFile, removeHs=False)
     if idCol not in df.columns:
-        print('Molecule ID column name is not detected', df.columns)
+        logger.info('Molecule ID column name is not detected', df.columns)
         quit()
     if prop4LE not in df.columns:
-        print('Column name of the property for ligand efficiency calculation is not detected', df.columns)
+        logger.info('Column name of the property for ligand efficiency calculation is not detected', df.columns)
         quit()
     try:  # Set data type to float
         df[prop4LE] = df[prop4LE].astype(float)
@@ -66,7 +65,7 @@ def workflow():
 
     # Calculate the heavy atom count for each molecule
     df['HeavyAtomCount'] = df['ROMol'].apply(lambda x: x.GetNumHeavyAtoms())
-    df['LE'] = df[prop4LE]/df['HeavyAtomCount']
+    df['LE'] = df[prop4LE] / df['HeavyAtomCount']
 
     # Sort by prop4LE and remove duplicated rows
     df.sort_values([prop4LE], inplace=True, ascending=[True])
@@ -94,7 +93,7 @@ def workflow():
     PandasTools.WriteSDF(resultDf, outputSdfFile,
                          molColName='ROMol', properties=list(resultDf))
 
-    print('The script took {:.2f} second!'.format(time.time() - startTime))
+    logger.info('The script took {:.2f} second!'.format(time.time() - startTime))
 
 
 if __name__ == '__main__':

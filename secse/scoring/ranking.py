@@ -12,6 +12,7 @@ import numpy as np
 import os
 import configparser
 from pandarallel import pandarallel
+from loguru import logger
 
 pandarallel.initialize(verbose=0)
 rdkit.RDLogger.DisableLog("rdApp.*")
@@ -67,7 +68,7 @@ class Ranking(object):
                 self.cal_le_rank()
             else:
                 self.ranking_flag = False
-                print("No molecule left, stopping generation.")
+                logger.info("No molecule left, stopping generation.")
         elif self.gen == 0:
             self.cal_le_rank()
 
@@ -90,7 +91,7 @@ class Ranking(object):
         self.docked_df["id"] = np.where(repeats > 1, self.docked_df['id'] + "-dp" + suffix.map(str),
                                         self.docked_df["id"])
 
-        print("{} cmpds after evaluate".format(self.docked_df.shape[0]))
+        logger.info("{} cmpds after evaluate".format(self.docked_df.shape[0]))
 
     def load_parents_sdf(self):
         gen = str(self.gen - 1)
@@ -100,13 +101,13 @@ class Ranking(object):
     def mols_score_below_cutoff(self):
         self.docking_score_cutoff = min(self.docking_score_cutoff,
                                         self.docked_df["docking score"].astype(float).quantile(0.01))
-        print("The evaluate score cutoff is: {}".format(self.docking_score_cutoff))
+        logger.info("The evaluate score cutoff is: {}".format(self.docking_score_cutoff))
         self.keep_mols = self.docked_df[self.docked_df["docking score"].astype(float) <= self.docking_score_cutoff]
         self.final_df = pd.concat([self.keep_mols, self.winner]).drop_duplicates(subset="id")
         cols = list(self.final_df.columns)
         cols = [i + "_gen_" + str(self.gen) for i in cols]
         self.final_df.columns = cols
-        print("{} final seeds.".format(self.final_df.shape[0]))
+        logger.info("{} final seeds.".format(self.final_df.shape[0]))
 
     def filter_rmsd_docking_score(self):
         last_sdf = self.sdf.replace("generation_" + str(self.gen), "generation_" + str(self.gen - 1))
@@ -134,11 +135,11 @@ class Ranking(object):
 
         # keep same binding mode (RMSD < 2A and delta evaluate score < -0.3) or
         # find a better binding mode (delta evaluate score < -1.2kcal )
-        print("{} cmpds before RMSD/Docking Score filter".format(self.docked_df.shape[0]))
+        logger.info("{} cmpds before RMSD/Docking Score filter".format(self.docked_df.shape[0]))
         self.docked_df = self.docked_df[(self.docked_df["delta_docking_score"] <= self.delta_docking_score) | (
                 (self.docked_df["rmsd"] <= self.RMSD) & (self.docked_df["delta_docking_score"] <= -0.2))]
         rest_cmpds = self.docked_df.shape[0]
-        print("{} cmpds after RMSD/Docking Score filter".format(rest_cmpds))
+        logger.info("{} cmpds after RMSD/Docking Score filter".format(rest_cmpds))
         if rest_cmpds == 0:
             return False
         return True

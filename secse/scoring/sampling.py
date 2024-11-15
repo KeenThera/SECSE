@@ -7,6 +7,8 @@
 """
 import os
 import pandas as pd
+from loguru import logger
+
 from scoring.diversity_score import cal_morgan_fp, tanimoto_smi
 
 
@@ -35,7 +37,7 @@ def sample_by_rule_weight(gen, filter_df, workdir_now):
         sampled_df = pd.concat([spacer_df, common_df], axis=0)
         sampled_df.to_csv(os.path.join(workdir_now, "sampled.csv"), index=False)
     else:
-        print("No cmpds generated from ring with spacer in the generation!")
+        logger.error("No cmpds generated from ring with spacer in the generation!")
         sampled_df = filter_df.sample(min(filter_df.shape[0], 500000), replace=False,
                                       weights="priority_gen_" + str(gen))
         sampled_df.to_csv(os.path.join(workdir_now, "sampled.csv"), index=False)

@@ -6,6 +6,7 @@
 @time: 2021/02/07/14:17
 """
 from rdkit import Chem
+from loguru import logger
 
 
 def ring_site_count(ring_atoms, systems):
@@ -164,5 +165,5 @@ class RingSystems(object):
 if __name__ == '__main__':
     mol = Chem.MolFromSmiles("C1(C2)CC(CC3)NC3CC2C1")
     ringcheck = RingSystems(mol)
-    print("Not Pass Filter" if not ringcheck.ring_check() else "Pass Filter")
-    print(ringcheck.ring_systems_size())
+    logger.info("Not Pass Filter" if not ringcheck.ring_check() else "Pass Filter")
+    logger.info(ringcheck.ring_systems_size())

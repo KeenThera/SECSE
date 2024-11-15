@@ -16,9 +16,8 @@ mkdir -p "$model_dir"
 
 # all data
 model="$model_dir"/G"$max_gen"_seed"$seed"
-chemprop_train --data_path "$train" --dataset_type regression --save_dir \
-  "$model" --seed "$seed" --save_smiles --save_preds --show_individual_scores \
-  --extra_metrics r2 mae mse --split_type random
+chemprop train --data-path "$train" --task-type regression --save-dir \
+  "$model" --data-seed "$seed" --show-individual-scores --split-type random
 
 # split files and prediction with CPU Parallelization
 split_dir=$workdir/prediction/pre_split_$max_gen
@@ -26,6 +25,7 @@ mkdir -p "$split_dir"
 split -l 1000 -d "$pre" "$split_dir"/part --additional-suffix ".csv"
 
 pre_dir="$workdir"/prediction/pre_dir_$max_gen
+mkdir -p "$pre_dir"
 cd "$split_dir" || exit
 # add header
 sed -i "1i\\id,smiles" part*.csv
@@ -34,7 +34,7 @@ for i in *.csv; do
 done >$files
 
 # run chemprop_predict
-parallel --bar -I {} -a ${files} -C ";" chemprop_predict --test_path {1} --preds_path {2} --smiles_columns smiles --checkpoint_path "$model"/fold_0/model_0/model.pt --no_cuda
+parallel --bar -I {} -a ${files} -C ";" chemprop predict --test-path {1} --preds-path {2} --smiles-columns smiles --model-paths "$model"/model_0/best.pt --accelerator cpu
 
 # merge prediction
 cd "$workdir"/prediction || exit

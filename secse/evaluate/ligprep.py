@@ -10,6 +10,7 @@
 import argparse
 import os
 import sys
+from loguru import logger
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers, StereoEnumerationOptions
@@ -50,7 +51,7 @@ def tau(mol, can=True):
     try:
         canon = enumerator.Canonicalize(mol)
     except Exception as e:
-        print(e)
+        logger.error(e)
         return [mol]
 
     if can:
@@ -180,7 +181,7 @@ class LigPrep:
                         if des == 'shape':
                             gen_minimized_3D(path, newmol, 10)
                     except Exception as e:
-                        print(e)
+                        logger.error(e)
                         continue
 
 

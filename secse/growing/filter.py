@@ -16,6 +16,7 @@ from rdkit.Chem import Descriptors, AllChem
 from rdkit.Chem import QED
 from rdkit.Chem import RDConfig
 import json
+from loguru import logger
 
 sys.path.append(os.getenv("SECSE"))
 from utilities.ring_tool import RingSystems
@@ -42,7 +43,7 @@ class Filter:
         if substructure_filter_file == "0":
             self.strutFilter = StructureFilter()
         else:
-            # print("Use additional substructure filter patters.")
+            # logger.info("Use additional substructure filter patters.")
             self.strutFilter = StructureFilter(substructure_filter_file)
 
         self.MW = config.getfloat("properties", "mw")
@@ -283,4 +284,4 @@ if __name__ == '__main__':
     time2 = time.time()
     # mfilter = Filter()
     # mfilter.load_mol("C12CCCC3(CCCCC3)C1C4C5C(CC(C(C6CCCC7C6C8C9C(C%10CCC9C%10)C7C8)CCC%11)C%11C5)C2C4")
-    # print(next(mfilter.ring_system_filter()))
+    # logger.info(next(mfilter.ring_system_filter()))

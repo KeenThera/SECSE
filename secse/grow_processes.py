@@ -22,6 +22,7 @@ from report.grow_path import write_growth
 from utilities.load_rules import json_to_DB
 from utilities.function_helper import shell_cmd_execute
 import time
+from loguru import logger
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 
@@ -99,19 +100,19 @@ class Grow(object):
         # ranking and find top fragments
         self.lig_sdf = os.path.join(self.workdir_now, "docking_outputs_with_score.sdf")
         end = time.time()
-        print("Docking time cost: {} min.".format(round((end - start) / 60, 2)))
+        logger.info("Docking time cost: {} min.".format(round((end - start) / 60, 2)))
 
     def docking_autodock_gpu(self, step):
-        print("Step {}: Docking with AutoDock GPU ...".format(step))
+        logger.info("Step {}: Docking with AutoDock GPU ...".format(step))
         dock_by_py_autodock_gpu(self.workdir_now, self.mols_smi, self.target, self.cpu_num, self.gpu_num)
 
     def docking_vina(self, step):
-        print("Step {}: Docking with Autodock Vina ...".format(step))
+        logger.info("Step {}: Docking with Autodock Vina ...".format(step))
         dock_by_py_vina(self.workdir_now, self.mols_smi, self.target, self.cpu_num, self.x, self.y, self.z,
                         self.box_size_x, self.box_size_y, self.box_size_z)
 
     def docking_glide(self, step):
-        print("Step {}: Docking with Glide ...".format(step))
+        logger.info("Step {}: Docking with Glide ...".format(step))
         # set different docking precision for different generation
         if self.gen < 1:
             dock_mode = "SP"
@@ -120,12 +121,12 @@ class Grow(object):
         dock_by_glide(self.workdir_now, self.mols_smi, self.target, self.gen, dock_mode, self.cpu_num)
 
     def docking_unidock(self, step):
-        print("Step {}: Docking with UniDock ...".format(step))
+        logger.info("Step {}: Docking with UniDock ...".format(step))
         dock_by_unidock(self.workdir_now, self.mols_smi, self.target, self.cpu_num, self.x, self.y, self.z,
                         self.box_size_x, self.box_size_y, self.box_size_z)
 
     def ranking_docked_mols(self, step=2):
-        print("Step {}: Ranking docked molecules...".format(str(step)))
+        logger.info("Step {}: Ranking docked molecules...".format(str(step)))
         ranking = Ranking(sdf=self.lig_sdf, gen=self.gen, config_file=self.config_path)
         if ranking.ranking_flag:
             ranking.docked_df.to_csv(
@@ -149,11 +150,11 @@ class Grow(object):
         self.check_growing()
 
     def dl_pre(self, step):
-        print("Step {}.1: Building deep learning models...".format(str(step)))
+        logger.info("Step {}.1: Building deep learning models...".format(str(step)))
 
         train, pre = prepare_files(self.gen, self.workdir, self.dl_mode)
         if pre is None:
-            print("Skipping docking score prediction as all molecules have been docked.")
+            logger.info("Skipping docking score prediction as all molecules have been docked.")
             self.dl_mode = 0
             return
         dl_shell = os.path.join(os.getenv("SECSE"), "scoring", "chemprop_pre.sh")
@@ -195,10 +196,10 @@ class Grow(object):
                 "Finish the calculation from the generation {} to the generation {}".format(self.start_gen, self.gen))
 
     def grow(self):
-        print("\n{}\nInput fragment file: {}".format("*" * 66, self.mols_smi))
-        print("Target grid file: {}".format(self.target))
-        print("Workdir: {}\n".format(self.workdir))
-        print("\n", "*" * 50, "\nGeneration ", str(self.gen), "...")
+        logger.info(f"Input fragment file: {self.mols_smi}")
+        logger.info(f"Target grid file: {self.target}")
+        logger.info(f"Workdir: {self.workdir}")
+        logger.info(f"Generation {self.gen} ...")
         # generation 0 : 1.evaluate; 2.ranking
         self.workdir_now = os.path.join(self.workdir, "generation_" + str(self.gen))
         step = 1
@@ -216,7 +217,7 @@ class Grow(object):
         #                   5.clustering; 6.evaluate; 7.ranking
         for g in range(1, self.total_generation + 1):
             self.gen += 1
-            print("\n", "*" * 50, "\nGeneration ", str(self.gen), "...")
+            logger.info(f"Generation {self.gen} ...")
             self.workdir_now = os.path.join(self.workdir, "generation_" + str(self.gen))
             if os.path.exists(self.workdir_now):
                 shutil.rmtree(self.workdir_now)
@@ -224,7 +225,7 @@ class Grow(object):
             self.winner_df.to_csv(os.path.join(self.workdir_now, "seed_fragments.smi"), sep="\t", index=False,
                                   quoting=csv.QUOTE_NONE)
             # mutation
-            print("Step 1: Mutation")
+            logger.info("Step 1: Mutation")
 
             self._generation_dir = os.path.join(self.workdir_now, "generation_split_by_seed")
             self.winner_df = self.winner_df.reset_index(drop=True)
@@ -240,20 +241,20 @@ class Grow(object):
             cmd_split = ["awk -F, '{print>\"" + self._generation_dir + "/\"$2\".csv\"}'", generation_path + ".csv"]
             shell_cmd_execute(cmd_split)
             # filter
-            print("Step 2: Applying filter to all mutated molecules.")
+            logger.info("Step 2: Applying filter to all mutated molecules.")
             time1 = time.time()
             cmd_filter = [os.path.join(os.getenv("SECSE"), "growing", "filter_parallel.sh"), self.workdir_now,
                           str(self.gen), self.config_path, str(self.cpu_num)]
             shell_cmd_execute(cmd_filter)
             time2 = time.time()
-            print("Filter runtime: {:.2f} min.".format((time2 - time1) / 60))
+            logger.info("Filter runtime: {:.2f} min.".format((time2 - time1) / 60))
 
             # do not sample or clustering if generated molecules less than wanted size
             try:
                 self._filter_df = pd.read_csv(os.path.join(self.workdir_now, "filter.csv"), header=None)
             except pd.errors.EmptyDataError:
                 self.growing_flag = self._GROWING_STATE_LIST[1]
-                print("No molecules met the filter criteria. Please adjust your configuration.")
+                logger.info("No molecules met the filter criteria. Please adjust your configuration.")
                 self.check_growing()
 
             self._filter_df.columns = header + ["flag"]
@@ -265,10 +266,10 @@ class Grow(object):
                 self._dock_df.to_csv(os.path.join(self.workdir_now, "sampled.csv"), index=False)
             else:
                 # sampling
-                print("Step 3: Sampling")
+                logger.info("Step 3: Sampling")
                 self._sampled_df = sample_by_rule_weight(self.gen, self._filter_df, self.workdir_now)
                 # self._sampled_df = sample_by_similarity(self.gen, self._filter_df, self.workdir_now, self.num_per_gen)
-                print("Step 4: Clustering")
+                logger.info("Step 4: Clustering")
                 # clustering
                 num_clusters = int(self.num_per_gen / 5) + 1
                 self._sampled_df = clustering(self._sampled_df, "smiles_gen_" + str(self.gen), self.gen, self.cpu_num,

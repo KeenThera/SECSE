@@ -8,13 +8,14 @@
 import os
 import subprocess
 import sys
+from loguru import logger
 
 
 def shell_cmd_execute(cmd_lst):
     cmd = " ".join(cmd_lst)
-    print(cmd)
+    logger.info(cmd)
     try:
         subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        print(e.output.decode())
+        logger.error(e.output.decode())
         raise Exception("Error executing command: {}".format(cmd))

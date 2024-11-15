@@ -9,6 +9,7 @@ prepare the protein file (pdbqt format)
 """
 import os
 import subprocess
+from loguru import logger
 from biopandas.pdb import PandasPdb
 
 

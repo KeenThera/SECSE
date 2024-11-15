@@ -6,6 +6,7 @@
 @time: 2021/11/19/10:05
 """
 import os
+from loguru import logger
 from utilities.function_helper import shell_cmd_execute
 
 GLIDE_SHELL = os.path.join(os.getenv("SECSE"), "evaluate", "ligprep_glide.sh")

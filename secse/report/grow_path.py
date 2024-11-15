@@ -16,6 +16,7 @@ from rdkit.Chem import Descriptors
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
 from pandarallel import pandarallel
 import configparser
+from loguru import logger
 
 sys.path.append(os.getenv("SECSE"))
 from scoring.ranking import read_dock_file
@@ -30,7 +31,7 @@ def cal_mutation_dic(workdir, max_gen):
 
     while max_gen > 0:
         mut_file = os.path.join(workdir, "generation_" + str(max_gen), "filter.csv")
-        print(mut_file)
+        logger.info(mut_file)
         with open(mut_file, "r") as f:
             lines = f.readlines()
         lines = [i.strip().split(",") for i in lines]
@@ -69,7 +70,7 @@ def grow_path(mut_dic_all, mut_id):
     try:
         gen_mol = int(mut_id.split("_")[-3])
     except IndexError:
-        print(mut_id)
+        logger.error(f"Index error: {mut_id}")
         return None
     mut_info_lst = []
 
@@ -129,7 +130,7 @@ def grep_sdf(workdir, merge_file):
     cmd_filter_sdf = ["perl", SELECT_SDF_SHELL, merged_sdf, ids_txt, selected_sdf]
     shell_cmd_execute(cmd_filter_sdf)
     # remove temporary file
-    os.remove(ids_txt)
+    # os.remove(ids_txt)
     os.remove(merged_sdf)
 
 
@@ -172,9 +173,9 @@ def write_growth(config_path: str, max_gen: int, dl_mode: int):
     grow_df = add_prop(new_file)
     grow_df.to_csv(final_file, index=False)
     grep_sdf(workdir, final_file)
-    print("\n", "*" * 100)
-    print("Output file: ", final_file)
-    print("*" * 100)
+    # logger.info("\n", "*" * 100)
+    logger.info(f"Output file: {final_file}")
+    # logger.info("*" * 100)
 
     # remove temporary files
     os.remove(file_path)

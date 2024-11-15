@@ -10,7 +10,7 @@ import os
 import shutil
 import glob
 import sys
-
+from loguru import logger
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from utilities.function_helper import shell_cmd_execute
@@ -32,6 +32,7 @@ def dock_by_py_autodock_gpu(workdir, smi, receptor, cpu_num, gpu_num):
     cmd = list(map(str, [AUTODOCK_GPU_SHELL, workdir, smi, receptor, cpu_num, gpu_num]))
     shell_cmd_execute(cmd)
     merged_sdf(workdir, 1)
+
 
 def dock_by_unidock(workdir, smi, receptor, cpu_num, x, y, z, box_size_x=20, box_size_y=20, box_size_z=20):
     if not os.environ.get("UNIDOCK"):
@@ -69,7 +70,7 @@ def check_mols(workdir, program):
             try:
                 new = AllChem.AssignBondOrdersFromTemplate(raw_mol, mol)
             except ValueError:
-                print("Failed check: ", i)
+                logger.error("Failed check: ", i)
                 continue
             new = Chem.AddHs(new, addCoords=True)
             Chem.MolToMolFile(new, sdf_path)
@@ -111,11 +112,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     if args.program == "vina":
-        print("Docking by Autodock Vina with {} CPUs...".format(args.cpu_num))
+        logger.info("Docking by Autodock Vina with {} CPUs...".format(args.cpu_num))
         dock_by_py_vina(args.workdir, args.mols_smi, args.receptor, args.cpu_num, args.x, args.y, args.z,
                         args.box_size_x, args.box_size_y, args.box_size_z)
     elif args.program == "autodock-gpu":
-        print("Docking by Autodock-GPU with {} CPUs and {} GPUs...".format(args.cpu_num, args.gpu_num))
+        logger.info("Docking by Autodock-GPU with {} CPUs and {} GPUs...".format(args.cpu_num, args.gpu_num))
         dock_by_py_autodock_gpu(args.workdir, args.mols_smi, args.receptor, args.cpu_num, args.gpu_num)
     else:
-        print("Please choose a docking program.")
+        logger.error("Please choose a docking program.")

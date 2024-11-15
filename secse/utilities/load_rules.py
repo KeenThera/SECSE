@@ -8,6 +8,7 @@
 
 import sqlite3
 import pandas as pd
+from loguru import logger
 
 
 def json_to_DB(in_json, out_db_path):
@@ -16,5 +17,5 @@ def json_to_DB(in_json, out_db_path):
     try:
         df.to_sql("G-001", conn)
     except Exception as e:
-        print(e)
+        logger.error(e)
     conn.close()

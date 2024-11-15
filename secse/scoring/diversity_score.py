@@ -12,7 +12,7 @@ import rdkit
 from rdkit.Chem import AllChem, rdFMCS, rdShapeHelpers
 from rdkit import Chem
 from pandarallel import pandarallel
-
+from loguru import logger
 
 def cal_morgan_fp(smi):
     mol = Chem.MolFromSmiles(smi)

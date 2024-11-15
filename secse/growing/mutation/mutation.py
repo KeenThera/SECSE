@@ -5,6 +5,7 @@ sys.path.append(os.getenv("SECSE"))
 import copy
 import sqlite3
 import pandas as pd
+from loguru import logger
 import rdkit
 from pandarallel import pandarallel
 from rdkit import Chem
@@ -54,7 +55,7 @@ class Mutation:
                     row = dict(row)
                     rules_dict[row["Rule ID"]] = (rdChemReactions.ReactionFromSmarts(row["SMARTS"]), row['Priority'])
             except sqlite3.OperationalError:
-                print("No rule class: ", table)
+                logger.error("No rule class: ", table)
                 pass
         self.rules_dict.update(rules_dict)
 
@@ -73,7 +74,7 @@ class Mutation:
                 rules_dict[row["Rule ID"]] = (rdChemReactions.ReactionFromSmarts(row["SMARTS"]), str(pri))
             self.rules_dict.update(rules_dict)
         except sqlite3.OperationalError:
-            print("No rule class: G-002")
+            logger.error("No rule class: G-002")
 
     # set smiles
     def load_mol(self, input_smiles):
@@ -100,7 +101,7 @@ class Mutation:
             for smi in uniq:
                 self.out_product_smiles.append((smi, item, partner, priority))
         except Exception as e:
-            # print(e)
+            logger.error(e)
             pass
 
     # add 2021.1.7

@@ -22,7 +22,7 @@ further validation.
 1. Setting up dependencies  
    python ~=3.9, perl ~=5.32
     ```bash
-    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2022.09
+    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2024.09.1 loguru
     conda activate secse
    ```
 2. Installing from source

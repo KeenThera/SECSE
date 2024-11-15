@@ -8,6 +8,7 @@
 import os
 import pandas as pd
 from rdkit import Chem
+from loguru import logger
 
 FILTER_FILE = os.path.join(os.getenv("SECSE"), "utilities", "Structure Filter_20211015_v1.12.xls")
 
@@ -52,4 +53,4 @@ class StructureFilter:
 if __name__ == '__main__':
     sf = StructureFilter()
     tmol = Chem.MolFromSmiles("CC(Cc1ncccn1)(c2ncccc2)C")
-    print(sf.sfilter(tmol))
+    logger.info(sf.sfilter(tmol))

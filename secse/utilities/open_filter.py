@@ -15,6 +15,7 @@ getting-real-with-molecular-property.html
 """
 from rdkit import Chem
 from rdkit.Chem import Descriptors, Crippen, Lipinski
+from loguru import logger
 
 
 def user_filter(mol):

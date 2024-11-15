@@ -10,6 +10,7 @@ import random
 from openbabel import openbabel
 from openbabel import pybel
 from rdkit import Chem
+from loguru import logger
 
 
 def wash_mol(smi):
