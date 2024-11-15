@@ -47,7 +47,7 @@ def get_pre(workdir, max_gen, get_all=False):
         pre_raw = os.path.join(pre_dir, "all_G" + str(max_gen) + "_for_pre.raw")
         pre_file = os.path.join(pre_dir, "all_G" + str(max_gen) + "_for_pre.csv")
 
-        cmd_cat = ["find", workdir, "-name \"filter.csv\" |xargs awk -F, 'NR>1{{print $(NF-5)\",\"$(NF-6)}}' >",
+        cmd_cat = ["find", workdir, "-name \"filter.csv\" |xargs awk -F, 'FNR>1{{print $(NF-5)\",\"$(NF-6)}}' >",
                    pre_raw]
         shell_cmd_execute(cmd_cat)
         cmd_dedup = ["awk -F',' '!seen[$2]++'", pre_raw, ">", pre_file]

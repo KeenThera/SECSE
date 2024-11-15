@@ -143,7 +143,7 @@ GNU Parallel installation
   `sudo apt-get install parallel`
 - From source: https://www.gnu.org/software/parallel/
 
-python ~=3.9, perl ~=5.32
+python ~=3.12, perl ~=5.32
 
 numpy~=1.26.4, pandas~=2.2.2, xlrd～=2.0.1, pandarallel~=1.6.5, tqdm~=4.67.0, biopandas~=0.5.1, openbabel~=3.1.1, rdkit~
 =2024.09, chemprop~=2.1, pytorch~=2.5.1+cu117, tensorboard~=2.18.0
