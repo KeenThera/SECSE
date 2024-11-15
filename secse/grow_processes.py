@@ -163,7 +163,7 @@ class Grow(object):
 
         dl_select_num = config.get("prediction", "dl_per_gen")
         dl_cmd = [dl_shell, self.workdir, train, pre, str(self.gen), dl_select_num, "22"]
-        shell_cmd_execute(dl_cmd)
+        shell_cmd_execute(dl_cmd, 0)
         # docking top predicted compounds
         self.workdir_now = os.path.join(self.workdir, "generation_{}_pre".format(self.gen))
         self.mols_smi = os.path.join(self.workdir_now, "mols_for_docking_pred.smi")

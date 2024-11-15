@@ -17,7 +17,7 @@ done >$files
 
 mkdir -p ../filter_flag
 # filter default
-parallel --jobs "$cpu_num" --bar -I {} -a ${files} -C ";" python "$script"
+parallel --jobs "$cpu_num" -I {} -a ${files} -C ";" python "$script"
 rm $files
 cd "${workdir}"/filter_flag || exit
 for i in *.csv; do

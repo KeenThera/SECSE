@@ -44,7 +44,7 @@ split -l 100 -d "$smi" "$split_dir"/part --additional-suffix ".smi"
 
 # run ligprep
 cd "$split_dir" || exit
-find . -name "*smi" | parallel --jobs "$cpu_num" --bar python "$script" "$workdir"
+find . -name "*smi" | parallel --jobs "$cpu_num" python "$script" "$workdir"
 
 # run unidock
 files=ligand_index.txt

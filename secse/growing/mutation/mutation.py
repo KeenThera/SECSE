@@ -101,7 +101,7 @@ class Mutation:
             for smi in uniq:
                 self.out_product_smiles.append((smi, item, partner, priority))
         except Exception as e:
-            logger.error(e)
+            # logger.error(e)
             pass
 
     # add 2021.1.7

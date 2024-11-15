@@ -21,12 +21,12 @@ def setup_logger(project_code, work_directory):
     if not isinstance(work_directory, Path):
         work_directory = Path(work_directory)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_file_path = work_directory / f'{project_code}_{timestamp}.log'
-    error_file_path = work_directory / f'{project_code}_{timestamp}_error.log'
+    # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_file_path = work_directory / f'{project_code}.log'
+    error_file_path = work_directory / f'{project_code}_error.log'
 
-    logger.add(log_file_path, rotation="10 MB", backtrace=True, diagnose=True, level="INFO", mode='w')
-    logger.add(error_file_path, rotation="5 MB", backtrace=True, diagnose=True, level="ERROR", mode='w')
+    logger.add(log_file_path, rotation="10 MB", backtrace=True, diagnose=True, level="INFO", mode='a')
+    logger.add(error_file_path, rotation="5 MB", backtrace=True, diagnose=True, level="ERROR", mode='a')
     return logger
 
 
@@ -92,14 +92,16 @@ def main():
 
 if __name__ == '__main__':
     time1 = time.time()
-    print(
-        "\n",
-        "*" * 88, "\n",
-        "      ____    _____    ____   ____    _____ \n",
-        "     / ___|  | ____|  / ___| / ___|  | ____|\n",
-        "     \\___ \\  |  _|   | |     \\___ \\  |  _|  \n",
-        "      ___) | | |___  | |___   ___) | | |___ \n",
-        "     |____/  |_____|  \\____| |____/  |_____| v1.3")
+    logger.info(
+        "\n"
+        + "*" * 88 + "\n"
+                     "      ____    _____    ____   ____    _____ \n"
+                     "     / ___|  | ____|  / ___| / ___|  | ____|\n"
+                     "     \\___ \\  |  _|   | |     \\___ \\  |  _|  \n"
+                     "      ___) | | |___  | |___   ___) | | |___ \n"
+                     "     |____/  |_____|  \\____| |____/  |_____| v1.3\n"
+        + "*" * 88
+    )
 
     try:
         main()

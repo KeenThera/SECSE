@@ -17,7 +17,7 @@ mkdir -p "$model_dir"
 # all data
 model="$model_dir"/G"$max_gen"_seed"$seed"
 chemprop train --data-path "$train" --task-type regression --save-dir \
-  "$model" --data-seed "$seed" --show-individual-scores --split-type random
+  "$model" --data-seed "$seed" --show-individual-scores --split-type random -qq
 
 # split files and prediction with CPU Parallelization
 split_dir=$workdir/prediction/pre_split_$max_gen
@@ -34,7 +34,7 @@ for i in *.csv; do
 done >$files
 
 # run chemprop_predict
-parallel --bar -I {} -a ${files} -C ";" chemprop predict --test-path {1} --preds-path {2} --smiles-columns smiles --model-paths "$model"/model_0/best.pt --accelerator cpu
+parallel -I {} -a ${files} -C ";" chemprop predict --test-path {1} --preds-path {2} --smiles-columns smiles --model-paths "$model"/model_0/best.pt --accelerator cpu -qq
 
 # merge prediction
 cd "$workdir"/prediction || exit

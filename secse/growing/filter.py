@@ -10,6 +10,7 @@ import os
 import sys
 import time
 import configparser
+import rdkit
 import rdkit.Chem as Chem
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt, CalcNumHBD, CalcNumHBA, CalcNumRotatableBonds
 from rdkit.Chem import Descriptors, AllChem
@@ -26,6 +27,8 @@ from utilities.open_filter import user_filter
 
 sys.path.append(os.path.join(RDConfig.RDContribDir, 'SA_Score'))
 import sascorer
+
+rdkit.RDLogger.DisableLog("rdApp.*")
 
 
 class Filter:

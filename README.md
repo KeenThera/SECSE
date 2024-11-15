@@ -22,7 +22,7 @@ further validation.
 1. Setting up dependencies  
    python ~=3.9, perl ~=5.32
     ```bash
-    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2024.09.1 loguru
+    conda create --name secse -c conda-forge parallel tqdm biopandas openbabel chemprop xlrd=2 pandarallel rdkit=2024.09.1 loguru tensorboard
     conda activate secse
    ```
 2. Installing from source
@@ -145,8 +145,8 @@ GNU Parallel installation
 
 python ~=3.9, perl ~=5.32
 
-numpy~=1.24.3, pandas~=1.3.3, xlrd～=2.0.1, pandarallel~=1.5.2, tqdm~=4.65.0, biopandas~=0.4.1, openbabel~=3.1.1, rdkit~
-=2022.09, chemprop~=1.5.2, pytorch~=2.0.0+cu117
+numpy~=1.26.4, pandas~=2.2.2, xlrd～=2.0.1, pandarallel~=1.6.5, tqdm~=4.67.0, biopandas~=0.5.1, openbabel~=3.1.1, rdkit~
+=2024.09, chemprop~=2.1, pytorch~=2.5.1+cu117, tensorboard~=2.18.0
 
 Linux server with CPUs only also works.
 

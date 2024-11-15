@@ -45,7 +45,7 @@ split -l 100 -d "$smi" "$split_dir"/part --additional-suffix ".smi"
 
 # run ligprep
 cd "$split_dir" || exit
-find . -name "*smi" | parallel --jobs "$cpu_num" --bar python "$script" "$workdir"
+find . -name "*smi" | parallel --jobs "$cpu_num" python "$script" "$workdir"
 
 # write vina config file
 cat >"$conf" <<EOF
@@ -73,7 +73,7 @@ for i in *pdbqt; do
 done >$files
 
 # ignore Vina stdout
-parallel --jobs "$cpu_num" --bar -I {} -a ${files} -C ";" "$VINA" --config "$conf" --ligand {1} --out {2} >/dev/null
+parallel --jobs "$cpu_num" -I {} -a ${files} -C ";" "$VINA" --config "$conf" --ligand {1} --out {2} >/dev/null
 rm $files
 
 find "$docking_dir" -name "*pdbqt" | parallel --jobs "$cpu_num" obabel -ipdbqt {} -O "$pdb_dir"/{/.}-dp.pdb -m &>/dev/null

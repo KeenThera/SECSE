@@ -10,6 +10,7 @@
 import argparse
 import os
 import sys
+import rdkit
 from loguru import logger
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -22,6 +23,8 @@ from openbabel import openbabel as ob
 
 sys.path.append(os.getenv("SECSE"))
 from utilities.wash_mol import charge_mol
+
+rdkit.RDLogger.DisableLog("rdApp.*")
 
 
 def setero(mol, onlyUnassigned=True):

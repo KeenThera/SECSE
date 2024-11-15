@@ -43,7 +43,7 @@ split -l 100 -d "$smi" "$split_dir"/part --additional-suffix ".smi"
 
 # run ligprep
 cd "$split_dir" || exit
-find . -name "*smi" | parallel --jobs "$cpu_num" --bar python "$script" "$workdir"
+find . -name "*smi" | parallel --jobs "$cpu_num" python "$script" "$workdir"
 
 # run autdock gpu
 cd "$lig_dir" || exit
@@ -51,7 +51,7 @@ for i in *pdbqt; do
   echo "$lig_dir/$i;$docking_dir/${i%.*}"
 done >$files
 
-parallel --jobs "$gpu_num" --bar -I {} -a ${files} -C ";" "$AUTODOCK_GPU/bin/autodock_gpu_128wi" --ffile "$receptor" --lfile {1} --resnam {2} --seed 12345 -D '$(({%}))' -x 0 -n 3 # >/dev/null
+parallel --jobs "$gpu_num" -I {} -a ${files} -C ";" "$AUTODOCK_GPU/bin/autodock_gpu_128wi" --ffile "$receptor" --lfile {1} --resnam {2} --seed 12345 -D '$(({%}))' -x 0 -n 3 # >/dev/null
 #rm $files
 
 # covert dlg file to pdb
