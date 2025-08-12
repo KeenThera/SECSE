@@ -164,4 +164,4 @@ https://doi.org/10.1186/s13321-022-00598-4
 SECSE is released under [Apache License, Version 2.0](LICENSE.txt).
 
 The project is being actively developed, if you have any questions or suggestions, please contact:
-lu_chong@keenthera.com
+wang_yikai@keenthera.com or luchong121@outlook.com
