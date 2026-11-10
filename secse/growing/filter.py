@@ -8,8 +8,9 @@
 import argparse
 import os
 import sys
+from pathlib import Path
 import time
-import configparser
+import csv
 import rdkit
 import rdkit.Chem as Chem
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt, CalcNumHBD, CalcNumHBA, CalcNumRotatableBonds
@@ -19,8 +20,11 @@ from rdkit.Chem import RDConfig
 import json
 from loguru import logger
 
-sys.path.append(os.getenv("SECSE"))
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from utilities.ring_tool import RingSystems
+from utilities.config import read_config
 from utilities.substructure_filter import StructureFilter
 from utilities.wash_mol import wash_mol, neutralize, charge_mol, get_keen_rotatable_bound_num, get_rigid_body_num
 from utilities.open_filter import user_filter
@@ -39,8 +43,7 @@ class Filter:
         self.mol = None
         self.pains_smarts = None
 
-        config = configparser.ConfigParser()
-        config.read(config_path)
+        config = read_config(config_path)
 
         substructure_filter_file = config.get("properties", "substructure_filter")
         if substructure_filter_file == "0":
@@ -142,7 +145,7 @@ class Filter:
 
     def load_pains_filter(self):
         # read smarts for pains
-        with open(os.path.join(os.getenv("SECSE"), 'growing/pains_smarts.json')) as f:
+        with open(Path(__file__).with_name("pains_smarts.json")) as f:
             data = json.load(f)
         pains_smarts = dict((k, Chem.MolFromSmarts(v)) for k, v in data.items())
         self.pains_smarts = pains_smarts
@@ -264,14 +267,11 @@ def mol_filter(molfilter: Filter, smi):
 
 def file_filter(file_path, workdir, gen, config):
     molsfilter = Filter(gen, config)
-    with open(file_path, "r") as inf:
-        with open(os.path.join(workdir, "filter_flag", os.path.basename(file_path)), "w") as outf:
-            for line in inf.readlines():
-                line = line.strip()
-                smi = line.split(",")[-5]
-                flag = mol_filter(molsfilter, smi)
-                new_line = line + "," + flag + "\n"
-                outf.write(new_line)
+    output_path = Path(workdir) / "filter_flag" / Path(file_path).name
+    with open(file_path, newline="") as source, output_path.open("w", newline="") as destination:
+        writer = csv.writer(destination, lineterminator="\n")
+        for row in csv.reader(source):
+            writer.writerow([*row, mol_filter(molsfilter, row[-5])])
 
 
 if __name__ == '__main__':

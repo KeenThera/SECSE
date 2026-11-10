@@ -1,0 +1,15 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+!.env.example
+
+# Default SECSE run directories and logs
+/secse-phgdh-*/
+/secse-run-*/
+/phgdh-results/
+/results/
+*.log
+*.log.*

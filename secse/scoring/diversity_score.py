@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import rdkit
 from rdkit.Chem import AllChem, rdFMCS, rdShapeHelpers
-from rdkit import Chem
+from rdkit import Chem, DataStructs
 from pandarallel import pandarallel
 from loguru import logger
 
@@ -36,32 +36,32 @@ def protrude_shape(ref, mol):
 
 def clustering(df: pd.DataFrame, smi, gen, cpu_num, k=500):
     df = df.reset_index(drop=True)
+    center_column = f"cluster_center_gen_{gen}"
+    similarity_column = f"cluster_center_dis_gen_{gen}"
+    if df.empty:
+        return df.assign(**{center_column: pd.Series(dtype=int), similarity_column: pd.Series(dtype=float)})
+    if k < 1:
+        raise ValueError("At least one cluster center is required")
     pandarallel.initialize(verbose=0, nb_workers=cpu_num)
-    df["fp2"] = df[smi].parallel_apply(cal_morgan_fp)
-    df = df.dropna(subset=["fp2"])
-    c = df["fp2"].sample(1)
-    c_next = c.index[0]
-    c = c.iloc[0]
-    c_lst = []
-    dis = np.zeros(df.shape[0])
-    dis_dic = dict()
-    for i in range(k):
-        new_dis = np.array(df["fp2"].apply(lambda x: tanimoto_smi(c, x)))
-        dis_dic[c_next] = new_dis.copy()
-        # mask mols with similarity larger than 0.6, those mols with not be consider as cluster center in next loops
-        new_dis[new_dis >= 0.6] = 999999999
-        dis += new_dis
-        if np.min(dis) >= 999999999:
+    fingerprints = df[smi].parallel_apply(cal_morgan_fp).tolist()
+    center = df.sample(1).index[0]
+    cumulative_similarity = np.zeros(len(df))
+    best_similarity = np.full(len(df), -np.inf)
+    best_center = np.empty(len(df), dtype=int)
+    excluded = 999999999
+    for _ in range(k):
+        similarity = np.asarray(DataStructs.BulkTanimotoSimilarity(fingerprints[center], fingerprints))
+        # A tie stays with the first center, matching the previous nlargest(1) assignment.
+        improved = similarity > best_similarity
+        best_center[improved] = center
+        best_similarity[improved] = similarity[improved]
+        similarity[similarity >= 0.6] = excluded
+        cumulative_similarity += similarity
+        center = np.argmin(cumulative_similarity)
+        if cumulative_similarity[center] >= excluded:
             break
-        else:
-            c_next = np.argmin(dis)
-            c = df["fp2"].iloc[c_next]
-            c_lst.append(c_next)
-
-    df_cluster = pd.DataFrame(dis_dic)
-    df["cluster_center_gen_" + str(gen)] = df_cluster.parallel_apply(lambda x: x.nlargest(1).index[0], axis=1)
-    df["cluster_center_dis_gen_" + str(gen)] = df_cluster.parallel_apply(lambda x: x.nlargest(1).iloc[0], axis=1)
-    df = df.drop(columns="fp2")
+    df[center_column] = best_center
+    df[similarity_column] = best_similarity
     return df
 
 

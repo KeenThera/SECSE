@@ -6,7 +6,31 @@
 @time: 2022/10/13/16:36
 """
 import subprocess
+import shlex
+import os
+import sys
 from loguru import logger
+
+
+def run_command(args, capture_mode="all", *, cwd=None, env=None):
+    args = [str(arg) for arg in args]
+    logger.info("Executing command: {}", shlex.join(args))
+    capture = {
+        "all": (subprocess.PIPE, subprocess.STDOUT),
+        "error": (subprocess.DEVNULL, subprocess.PIPE),
+        0: (None, None),
+    }
+    stdout, stderr = capture[capture_mode]
+    child_env = dict(os.environ if env is None else env)
+    child_env.setdefault("SECSE_PYTHON", sys.executable)
+    result = subprocess.run(args, cwd=cwd, env=child_env, stdout=stdout, stderr=stderr, text=True)
+    output = result.stdout if capture_mode == "all" else result.stderr
+    if result.returncode:
+        detail = f"\n{output.rstrip()}" if output else ""
+        raise RuntimeError(f"Command exited with status {result.returncode}: {shlex.join(args)}{detail}")
+    if output:
+        logger.info("Command output:\n{}", output.rstrip())
+    return output
 
 
 def shell_cmd_execute(cmd_lst, capture_mode="all"):

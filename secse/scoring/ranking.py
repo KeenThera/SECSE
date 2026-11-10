@@ -6,16 +6,15 @@
 @time: 2020/11/04/13:35
 """
 import pandas as pd
+from rdkit import RDLogger
 from rdkit.Chem import PandasTools
-from scoring.diversity_score import *
+from scoring.diversity_score import cal_rmsd
 import numpy as np
 import os
-import configparser
-from pandarallel import pandarallel
 from loguru import logger
+from utilities.config import read_config
 
-pandarallel.initialize(verbose=0)
-rdkit.RDLogger.DisableLog("rdApp.*")
+RDLogger.DisableLog("rdApp.*")
 
 
 def read_dock_file(sdf):
@@ -48,8 +47,7 @@ class Ranking(object):
         self.sdf = sdf
         self.gen = gen
 
-        config = configparser.ConfigParser()
-        config.read(config_file)
+        config = read_config(config_file)
         self.docking_score_cutoff = config.getfloat("docking", "score_cutoff")
         self.RMSD = config.getfloat("docking", "rmsd")
         self.delta_docking_score = config.getfloat("docking", "delta_score")
@@ -72,7 +70,7 @@ class Ranking(object):
         elif self.gen == 0:
             self.cal_le_rank()
 
-        self.size = min(config.getint("general", "seed_per_gen"), self.docked_df.shape[0])
+        self.size = min(config.getint("general", "seed_per_gen", fallback=1000), self.docked_df.shape[0])
 
     def load_sdf(self):
         raw_df = PandasTools.LoadSDF(self.sdf, smilesName='smiles', molColName='Molecule')[
@@ -110,9 +108,12 @@ class Ranking(object):
         logger.info("{} final seeds.".format(self.final_df.shape[0]))
 
     def filter_rmsd_docking_score(self):
-        last_sdf = self.sdf.replace("generation_" + str(self.gen), "generation_" + str(self.gen - 1))
+        last_sdf = os.path.join(os.path.dirname(os.path.dirname(self.sdf)), f"generation_{self.gen - 1}",
+                                os.path.basename(self.sdf))
         last_df = read_dock_file(last_sdf).set_index("ID")
-        mut_df = pd.read_csv(os.path.join(os.path.dirname(self.sdf), "filter.csv"), low_memory=False)
+        id_columns = {f"id_gen_{gen}": str for gen in (self.gen - 1, self.gen)}
+        mut_df = pd.read_csv(os.path.join(os.path.dirname(self.sdf), "filter.csv"), low_memory=False,
+                             dtype=id_columns)
         parent_dic = dict(zip(mut_df["id_gen_" + str(self.gen)], zip(mut_df["id_gen_" + str(self.gen - 1)],
                                                                      mut_df["type"])))
         self.docked_df["id_find_parent"] = self.docked_df["id_raw"].apply(lambda x: clean_id(x, self.gen))

@@ -1,53 +1,21 @@
-#! /bin/bash
-# -*- coding:utf-8 _*-
-# @author: Lu Chong
-# @file: ligprep_vina_parallel.sh
-# @time: 2021/9/8/09:52
-
+#!/bin/bash
+set -euo pipefail
+shopt -s nullglob
 SECONDS=0
-workdir=${1}
-smi=${2}
-receptor=${3}
-x=${4}
-y=${5}
-z=${6}
-box_size_x=${7}
-box_size_y=${8}
-box_size_z=${9}
-cpu_num=${10}
-files=tmp.txt
-script=$SECSE/evaluate/ligprep.py
-split_dir=$workdir/docking_split
-docking_dir=$workdir/docking_poses
-lig_dir=$workdir/ligands_for_docking
-pdb_dir=$workdir/pdb_files
-sdf_dir=$workdir/sdf_files
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+source "$script_dir/ligprep_common.sh"
+
+vina=$(resolve_program "${VINA:-vina}")
+prepare_docking "$1" "$2" "$3" "${10}"
+x=$4
+y=$5
+z=$6
+box_size_x=$7
+box_size_y=$8
+box_size_z=$9
 conf=$workdir/vina_config.txt
-cd "$workdir" || exit
-create_clean_directory() {
-  dir_name=$1
-  if [ -d "$dir_name" ]; then
-    echo "Directory $dir_name already exists, removing $dir_name ..."
-    rm -rf "$dir_name"
-  fi
-  if mkdir "$dir_name"; then
-    return 0
-  else
-    echo "Creating directory failed: $dir_name"
-    return 1
-  fi
-}
-for dir in "$split_dir" "$docking_dir" "$lig_dir" "$pdb_dir" "$sdf_dir"; do
-  create_clean_directory "$dir"
-done
-# split by line
-split -l 100 -d "$smi" "$split_dir"/part --additional-suffix ".smi"
+export vina conf
 
-# run ligprep
-cd "$split_dir" || exit
-find . -name "*smi" | parallel --jobs "$cpu_num" python "$script" "$workdir"
-
-# write vina config file
 cat >"$conf" <<EOF
 receptor = $receptor
 center_x =  $x
@@ -66,17 +34,7 @@ exhaustiveness = 16
 verbosity = 0
 EOF
 
-# run vina
-cd "$lig_dir" || exit
-for i in *pdbqt; do
-  echo "$lig_dir/$i;$docking_dir/$i"
-done >$files
-
-# ignore Vina stdout
-parallel --jobs "$cpu_num" -I {} -a ${files} -C ";" "$VINA" --config "$conf" --ligand {1} --out {2} >/dev/null
-rm $files
-
-find "$docking_dir" -name "*pdbqt" | parallel --jobs "$cpu_num" obabel -ipdbqt {} -O "$pdb_dir"/{/.}-dp.pdb -m &>/dev/null
-
-duration=$SECONDS
-echo "Docking runtime: $((duration / 60)) minutes $((duration % 60)) seconds."
+printf '%s\0' "${ligands[@]}" |
+  parallel -0 --jobs "$cpu_num" '"$vina" --config "$conf" --ligand {} --out "$docking_dir"/{/}' >/dev/null
+convert_poses
+echo "Docking runtime: $((SECONDS / 60)) minutes $((SECONDS % 60)) seconds."

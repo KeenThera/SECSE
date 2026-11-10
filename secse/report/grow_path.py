@@ -7,23 +7,26 @@
 """
 import os
 import sys
+from pathlib import Path
 import time
 import argparse
-import numpy as np
+import csv
+import shutil
+from tempfile import TemporaryDirectory
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 from rdkit.Chem.rdMolDescriptors import CalcExactMolWt
-from pandarallel import pandarallel
-import configparser
 from loguru import logger
 
-sys.path.append(os.getenv("SECSE"))
-from scoring.ranking import read_dock_file
-from utilities.function_helper import shell_cmd_execute
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-pandarallel.initialize(verbose=0)
-SELECT_SDF_SHELL = os.path.join(os.getenv("SECSE"), "report", "filter_sdf_by_titles.pl")
+from scoring.ranking import read_dock_file
+from utilities.config import read_config
+from utilities.function_helper import run_command
+
+SELECT_SDF_SHELL = Path(__file__).with_name("filter_sdf_by_titles.pl")
 
 
 def cal_mutation_dic(workdir, max_gen):
@@ -32,11 +35,17 @@ def cal_mutation_dic(workdir, max_gen):
     while max_gen > 0:
         mut_file = os.path.join(workdir, "generation_" + str(max_gen), "filter.csv")
         logger.info(mut_file)
-        with open(mut_file, "r") as f:
-            lines = f.readlines()
-        lines = [i.strip().split(",") for i in lines]
-        mut_dic = {i[-6].split("-dp")[0].split("-C")[0]: [i[0], i[1].split("-dp")[0].split("-C")[0], i[-5], i[-4]] for i
-                   in lines}
+        with open(mut_file, newline="") as source:
+            rows = csv.DictReader(source)
+            mut_dic = {
+                row[f"id_gen_{max_gen}"].split("-dp")[0].split("-C")[0]: [
+                    row[f"smiles_gen_{max_gen - 1}"],
+                    row[f"id_gen_{max_gen - 1}"].split("-dp")[0].split("-C")[0],
+                    row[f"reaction_id_gen_{max_gen}"],
+                    row[f"partner_gen_{max_gen}"],
+                ]
+                for row in rows
+            }
         mut_dic_all["gen" + str(max_gen)] = mut_dic
         max_gen -= 1
     return mut_dic_all
@@ -44,8 +53,9 @@ def cal_mutation_dic(workdir, max_gen):
 
 def merge_multi_generation(workdir, max_gen, file_path, dl_mode, config_path):
     df_lst = [pd.read_csv(os.path.join(workdir, "generation_" + str(i),
-                                       "docked_gen_" + str(i) + ".csv")) for i in range(1, max_gen + 1)]
-    if dl_mode == 2:
+                                       "docked_gen_" + str(i) + ".csv"), dtype={"id": str})
+              for i in range(min(1, max_gen), max_gen + 1)]
+    if dl_mode == 2 and max_gen > 0:
         dl_df = read_dock_file(os.path.join(workdir, "generation_{}_pre".format(max_gen),
                                             "docking_outputs_with_score.sdf"))
         dl_df["le_ln"] = dl_df.apply(
@@ -54,8 +64,7 @@ def merge_multi_generation(workdir, max_gen, file_path, dl_mode, config_path):
         dl_df.columns = [i.lower() for i in list(dl_df.columns)]
         dl_df = dl_df.drop(columns=["molecule"])
         dl_df = dl_df.reindex(columns=df_lst[0].columns)
-        config = configparser.ConfigParser()
-        config.read(config_path)
+        config = read_config(config_path)
         score_cutoff = config.getfloat("prediction", "dl_score_cutoff")
         dl_df = dl_df[dl_df["docking score"] < score_cutoff]
         df_lst.append(dl_df)
@@ -69,8 +78,8 @@ def grow_path(mut_dic_all, mut_id):
     mut_id = mut_id.split("-dp")[0].split("-C")[0]
     try:
         gen_mol = int(mut_id.split("_")[-3])
-    except IndexError:
-        logger.error(f"Index error: {mut_id}")
+    except (IndexError, ValueError):
+        logger.debug("Skipping molecule with no generation in its ID: {}", mut_id)
         return None
     mut_info_lst = []
 
@@ -86,7 +95,7 @@ def grow_path(mut_dic_all, mut_id):
 
 
 def add_prop(merged_df_path):
-    merged_df = pd.read_csv(merged_df_path)
+    merged_df = pd.read_csv(merged_df_path, dtype={"id": str})
     raw_cols = list(merged_df.columns)
     merged_df["mol"] = merged_df["smiles"].apply(Chem.MolFromSmiles)
     # check charge
@@ -113,30 +122,30 @@ def charge_filter(mol):
     return False
 
 
-def grep_sdf(workdir, merge_file):
-    merged_sdf = os.path.join(workdir, "merged_all.sdf")
-    selected_sdf = os.path.join(workdir, "selected.sdf")
-    ids_txt = os.path.join(workdir, "seleted_ids.txt")
-    # merge all sdf
-    cmd_merge = ["find", workdir, "-name \"docking_outputs_with_score.sdf\" | xargs cat >", merged_sdf]
-    shell_cmd_execute(cmd_merge)
-    # create ids
-    df = pd.read_csv(merge_file)
-    ids = list(set(df["id"].apply(lambda x: x.split("-dp")[0])))
-    # write ids
-    with open(ids_txt, "w") as ids_out:
-        [ids_out.write(i + "\n") for i in ids]
-    # subset sdf
-    cmd_filter_sdf = ["perl", SELECT_SDF_SHELL, merged_sdf, ids_txt, selected_sdf]
-    shell_cmd_execute(cmd_filter_sdf)
-    # remove temporary file
-    # os.remove(ids_txt)
-    os.remove(merged_sdf)
+def grep_sdf(workdir, merge_file, generations=None):
+    workdir = Path(workdir)
+    name = "docking_outputs_with_score.sdf"
+    sources = (workdir.rglob(name) if generations is None
+               else (workdir / generation / name for generation in generations))
+    df = pd.read_csv(merge_file, dtype={"id": str})
+    ids = dict.fromkeys(value.split("-dp")[0] for value in df["id"])
+    with TemporaryDirectory(prefix=".secse-report-", dir=workdir) as temp_dir:
+        temp = Path(temp_dir)
+        merged_sdf = temp / "merged_all.sdf"
+        with merged_sdf.open("wb") as destination:
+            for path in sources:
+                with path.open("rb") as source:
+                    shutil.copyfileobj(source, destination)
+        ids_txt = temp / "seleted_ids.txt"
+        ids_txt.write_text("".join(f"{title}\n" for title in ids))
+        selected_sdf = temp / "selected.sdf"
+        run_command(["perl", SELECT_SDF_SHELL, merged_sdf, ids_txt, selected_sdf])
+        selected_sdf.replace(workdir / selected_sdf.name)
+        ids_txt.replace(workdir / ids_txt.name)
 
 
 def write_growth(config_path: str, max_gen: int, dl_mode: int):
-    config = configparser.ConfigParser()
-    config.read(config_path)
+    config = read_config(config_path)
     workdir = config.get("general", "workdir")
     now = str(int(time.time()))
     file_path = os.path.join(workdir, "merged_docked_best_" + now + ".csv")
@@ -146,33 +155,24 @@ def write_growth(config_path: str, max_gen: int, dl_mode: int):
     final_file = file_path.replace(".csv", "_with_grow_path.csv")
 
     mut_dic_all = cal_mutation_dic(workdir, max_gen)
-    with open(file_path, 'r') as raw:
-        header = raw.readline().strip().split(",")
-        path_header = list(zip(["smi_gen_", "id_gen_", "rxn_gen_", "partner_gen_"] * max_gen,
-                               np.repeat(list(range(max_gen)), 4).astype(str)))
-        header += ["".join(i) for i in path_header]
-        new_header = ",".join(header) + "\n"
-        with open(new_file, "w") as new:
-            new.write(new_header)
-            for line in raw.readlines():
-                line = line.strip().split(",")
-                mol_id = line[1]
-                # find grow path per line
-                mut_info_lst = grow_path(mut_dic_all, mol_id)
-                if mut_info_lst is None:
-                    continue
-                mut_info_lst.reverse()
-                mut_info_lst = list(np.concatenate(mut_info_lst))
-                new_line = ",".join(line + mut_info_lst)
-
-                # fill empty columns
-                cols = new_header.count(",")
-                new_line += "," * (cols - new_line.count(",")) + "\n"
-                new.write(new_line)
+    with open(file_path, newline="") as raw, open(new_file, "w", newline="") as new:
+        reader = csv.DictReader(raw)
+        path_header = [f"{field}_gen_{gen}" for gen in range(max_gen)
+                       for field in ("smi", "id", "rxn", "partner")]
+        writer = csv.DictWriter(new, fieldnames=reader.fieldnames + path_header)
+        writer.writeheader()
+        for row in reader:
+            path = grow_path(mut_dic_all, row["id"]) if max_gen else []
+            if path is not None:
+                fields = (value for step in reversed(path) for value in step)
+                writer.writerow({**row, **dict(zip(path_header, fields))})
 
     grow_df = add_prop(new_file)
     grow_df.to_csv(final_file, index=False)
-    grep_sdf(workdir, final_file)
+    generations = [f"generation_{gen}" for gen in range(max_gen + 1)]
+    if dl_mode == 2 and max_gen > 0:
+        generations.append(f"generation_{max_gen}_pre")
+    grep_sdf(workdir, final_file, generations)
     # logger.info("\n", "*" * 100)
     logger.info(f"Output file: {final_file}")
     # logger.info("*" * 100)
@@ -187,6 +187,6 @@ if __name__ == '__main__':
     parser.add_argument("config_path", help="config file path", type=str)
     parser.add_argument("max_gen", help="Max number of generation.", type=int)
     parser.add_argument("dl_mode",
-                        help="Mode of deep learning modeling, 0: not use, 1: modeling per generation, 2: modeling overall after all the generation")
+                        type=int, choices=(0, 1, 2), help="Deep learning prediction mode")
     args = parser.parse_args()
     write_growth(args.config_path, args.max_gen, args.dl_mode)

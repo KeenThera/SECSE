@@ -1,9 +1,10 @@
 import os
-import sys
+import csv
+from pathlib import Path
 
-sys.path.append(os.getenv("SECSE"))
 import copy
 import sqlite3
+from contextlib import closing
 import pandas as pd
 from loguru import logger
 import rdkit
@@ -11,12 +12,10 @@ from pandarallel import pandarallel
 from rdkit import Chem
 from rdkit.Chem import rdChemReactions
 from utilities.wash_mol import get_bridged_atoms, neutralize_atoms
-from utilities.load_rules import json_to_DB
-from utilities.function_helper import shell_cmd_execute
 
 rdkit.RDLogger.DisableLog("rdApp.*")
 
-RULE_DB = os.path.join(os.getenv("SECSE"), "growing/mutation/rules_demo.db")
+RULE_DB = Path(__file__).with_name("rules_demo.db")
 
 
 class Mutation:
@@ -25,6 +24,8 @@ class Mutation:
         # self.load_reaction()
         self.workdir = workdir
         self.rule_db = rule_db
+        if not Path(rule_db).is_file():
+            raise FileNotFoundError(f"Mutation rule database: {rule_db}")
         # self.load_buildingblock(num=num)
         self.rules_dict = {}
         self.load_common_rules()
@@ -42,39 +43,27 @@ class Mutation:
                       'G-001', 'G-003', 'G-004', 'G-005', 'G-006', 'G-007',
                       'M-001', 'M-002', 'M-003', 'M-004', 'M-005', 'M-006', 'M-007', 'M-008', 'M-009', 'M-010'
                       ]
-        rules_dict = {}
-        for table in tables:
-            try:
-                sql = 'select * from "{0}"'.format(table)
-                conn = sqlite3.connect(self.rule_db)
-                conn.row_factory = sqlite3.Row
-                c = conn.cursor()
-                c.execute(sql)
-                rs = c.fetchall()
-                for row in rs:
-                    row = dict(row)
-                    rules_dict[row["Rule ID"]] = (rdChemReactions.ReactionFromSmarts(row["SMARTS"]), row['Priority'])
-            except sqlite3.OperationalError:
-                logger.error("No rule class: ", table)
-                pass
-        self.rules_dict.update(rules_dict)
+        with closing(sqlite3.connect(self.rule_db)) as connection:
+            connection.row_factory = sqlite3.Row
+            available = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+            for table in tables:
+                if table in available:
+                    identifier = table.replace('"', '""')
+                    for row in connection.execute(f'SELECT * FROM "{identifier}"'):
+                        self.rules_dict[row["Rule ID"]] = (
+                            rdChemReactions.ReactionFromSmarts(row["SMARTS"]), row["Priority"],
+                        )
 
     def load_spacer_rings_rules(self):
-        rules_dict = {}
-        try:
-            sql = 'select * from "{}"'.format("G-002")
-            conn = sqlite3.connect(self.rule_db)
-            conn.row_factory = sqlite3.Row
-            c = conn.cursor()
-            c.execute(sql)
-            rs = c.fetchall()
-            for row in rs:
-                row = dict(row)
-                pri = int(row['Spacer Priority']) * int(row['Ring Priority'])
-                rules_dict[row["Rule ID"]] = (rdChemReactions.ReactionFromSmarts(row["SMARTS"]), str(pri))
-            self.rules_dict.update(rules_dict)
-        except sqlite3.OperationalError:
-            logger.error("No rule class: G-002")
+        with closing(sqlite3.connect(self.rule_db)) as connection:
+            connection.row_factory = sqlite3.Row
+            table = connection.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'G-002'")
+            if table.fetchone():
+                for row in connection.execute('SELECT * FROM "G-002"'):
+                    priority = int(row["Spacer Priority"]) * int(row["Ring Priority"])
+                    self.rules_dict[row["Rule ID"]] = (
+                        rdChemReactions.ReactionFromSmarts(row["SMARTS"]), str(priority),
+                    )
 
     # set smiles
     def load_mol(self, input_smiles):
@@ -197,24 +186,32 @@ def mutation_df(df: pd.DataFrame, workdir, cpu_num, gen=1, rule_db=None, project
     mut_df = mut_df.dropna(subset=["smiles_gen_" + str(gen)]).reset_index(drop=True)
     n = 1
     mut_path = os.path.join(workdir, "mutation")
-    with open(mut_path + ".raw", "w") as f:
+    seen = set()
+    with open(mut_path + ".raw", "w", newline="") as raw, open(mut_path + ".csv", "w", newline="") as unique:
+        raw_writer = csv.writer(raw, lineterminator="\n")
+        unique_writer = csv.writer(unique, lineterminator="\n")
+
+        def write_product(row):
+            raw_writer.writerow(row)
+            product = row[-5]
+            if product not in seen:
+                seen.add(product)
+                unique_writer.writerow(row)
+
         header = list(mut_df.columns[:-1]) + ["smiles_gen_" + str(gen), "id_gen_" + str(gen),
                                               "reaction_id_gen_" + str(gen), "partner_gen_" + str(gen),
                                               "priority_gen_" + str(gen)]
         for i in mut_df.values.tolist():
             last_gen_info = list(map(str, i[:-1]))
             # keep parent mol
-            f.write(",".join(last_gen_info + [last_gen_info[0], last_gen_info[1].split("-dp")[0].split("-C")[0],
-                                              "Na-Na-Na", "", "3"]) + "\n")
+            write_product(last_gen_info + [last_gen_info[0], last_gen_info[1].split("-dp")[0].split("-C")[0],
+                                           "Na-Na-Na", "", "3"])
             # write mutation mols
             for info in i[-1]:
                 info = list(map(str, info))
                 new_line = last_gen_info + [info[0]] + [
                     project_code.upper() + "_" + str(gen) + "_M_" + str(n).zfill(9)] + info[1:]
-                f.write(",".join(new_line) + "\n")
+                write_product(new_line)
                 n += 1
-    # drop duplicates product smiles by awk
-    cmd_dedup = ["awk -F',' '!seen[$(NF-4)]++'", mut_path + ".raw ", ">", mut_path + ".csv"]
-    shell_cmd_execute(cmd_dedup)
 
     return header

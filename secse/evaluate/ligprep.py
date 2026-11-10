@@ -10,6 +10,7 @@
 import argparse
 import os
 import sys
+from pathlib import Path
 import rdkit
 from loguru import logger
 from rdkit import Chem
@@ -21,7 +22,9 @@ from rdkit.Chem import rdMolAlign
 from openbabel import pybel
 from openbabel import openbabel as ob
 
-sys.path.append(os.getenv("SECSE"))
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from utilities.wash_mol import charge_mol
 
 rdkit.RDLogger.DisableLog("rdApp.*")

@@ -6,8 +6,9 @@
 @time: 2021/10/27/14:26
 """
 import argparse
+import csv
+from pathlib import Path
 
-from openbabel import openbabel
 import pandas as pd
 import os
 import rdkit
@@ -15,15 +16,13 @@ from rdkit import Chem
 from rdkit.Chem import PandasTools
 from rdkit.Chem.MolStandardize import rdMolStandardize
 from tqdm import tqdm
-from utilities.function_helper import shell_cmd_execute
-from loguru import logger
 rdkit.RDLogger.DisableLog("rdApp.*")
 
 
 def get_train(sdf, dock):
     g = PandasTools.LoadSDF(sdf, molColName='Molecule')
 
-    g_smi = pd.read_csv(dock, sep="\t", header=None)
+    g_smi = pd.read_csv(dock, sep="\t", header=None, dtype=str, keep_default_na=False)
     g_smi.columns = ["Smiles", "ID"]
     g_smi = g_smi.drop_duplicates(subset="ID")
     g_smi = g_smi.set_index("ID")
@@ -32,7 +31,7 @@ def get_train(sdf, dock):
     g["docking score"] = g["docking score"].astype(float)
     g = g.sort_values("docking score", ascending=True)
 
-    g["Smiles"] = g["ID"].apply(lambda x: g_smi.loc[x.rsplit("-C", 1)[0]][0])
+    g["Smiles"] = g["ID"].apply(lambda x: g_smi.at[x.rsplit("-C", 1)[0].split("\t", 1)[0], "Smiles"])
     g_new = g.sort_values(by="docking score", ascending=True).drop_duplicates(subset="Smiles", keep="first")
 
     smi = g_new["Smiles"].apply(lambda x: neutralize(x))
@@ -42,39 +41,43 @@ def get_train(sdf, dock):
 
 
 def get_pre(workdir, max_gen, get_all=False):
-    pre_dir = os.path.join(workdir, "prediction")
+    workdir = Path(workdir)
+    pre_dir = workdir / "prediction"
     if get_all:
-        pre_raw = os.path.join(pre_dir, "all_G" + str(max_gen) + "_for_pre.raw")
-        pre_file = os.path.join(pre_dir, "all_G" + str(max_gen) + "_for_pre.csv")
-
-        cmd_cat = ["find", workdir, "-name \"filter.csv\" |xargs awk -F, 'FNR>1{{print $(NF-5)\",\"$(NF-6)}}' >",
-                   pre_raw]
-        shell_cmd_execute(cmd_cat)
-        cmd_dedup = ["awk -F',' '!seen[$2]++'", pre_raw, ">", pre_file]
-        shell_cmd_execute(cmd_dedup)
-
-        drop_mols = os.path.join(pre_dir, "drop_ids.txt")
-        mols_id_cat = ["find", workdir, "-name \"mols_for_docking.smi\" |xargs cut -f2  >", drop_mols]
-        shell_cmd_execute(mols_id_cat)
-        final_file = os.path.join(pre_dir, "all_G" + str(max_gen) + "_for_pre_uniq.csv")
+        prefix = f"all_G{max_gen}_for_pre"
+        generation_paths = [workdir / f"generation_{gen}" for gen in range(1, max_gen + 1)]
+        drop_path = pre_dir / "drop_ids.txt"
     else:
-        pre_file = os.path.join(pre_dir, "gen_" + str(max_gen) + "_for_pre.csv")
-        cmd_cp = ["awk -F, 'NR>1{{print $(NF-5)\",\"$(NF-6)}}'",
-                  os.path.join(workdir, "generation_" + str(max_gen), "filter.csv"), ">", pre_file]
-        shell_cmd_execute(cmd_cp)
+        prefix = f"gen_{max_gen}_for_pre"
+        generation_paths = [workdir / f"generation_{max_gen}"]
+        drop_path = pre_dir / f"drop_ids_{max_gen}.txt"
 
-        drop_mols = os.path.join(pre_dir, "drop_ids_{}.txt".format(max_gen))
-        mols_id_cat = ["cut -f2", os.path.join(workdir, "generation_" + str(max_gen), "mols_for_docking.smi"), ">",
-                       drop_mols]
-        shell_cmd_execute(mols_id_cat)
-        final_file = os.path.join(pre_dir, "gen_" + str(max_gen) + "_for_pre_uniq.csv")
+    docked_ids = {}
+    for generation in generation_paths:
+        with (generation / "mols_for_docking.smi").open(newline="") as stream:
+            docked_ids.update(dict.fromkeys(row[1] for row in csv.reader(stream, delimiter="\t")))
+    drop_path.write_text("".join(f"{molecule_id}\n" for molecule_id in docked_ids))
 
-    try:
-        cmd_drop = ["grep -wvf", drop_mols, pre_file, ">", final_file]
-        shell_cmd_execute(cmd_drop)
-    except:
-        final_file = None
-    return final_file
+    seen = set()
+    final_file = pre_dir / f"{prefix}_uniq.csv"
+    count = 0
+    with (pre_dir / f"{prefix}.csv").open("w", newline="") as candidates, final_file.open("w", newline="") as remaining:
+        candidate_writer = csv.writer(candidates, lineterminator="\n")
+        remaining_writer = csv.writer(remaining, lineterminator="\n")
+        for generation in generation_paths:
+            gen = generation.name.split("_")[-1]
+            with (generation / "filter.csv").open(newline="") as stream:
+                for row in csv.DictReader(stream):
+                    molecule_id, smiles = row[f"id_gen_{gen}"], row[f"smiles_gen_{gen}"]
+                    if get_all and smiles in seen:
+                        continue
+                    if get_all:
+                        seen.add(smiles)
+                    candidate_writer.writerow([molecule_id, smiles])
+                    if molecule_id not in docked_ids:
+                        remaining_writer.writerow([molecule_id, smiles])
+                        count += 1
+    return str(final_file) if count else None
 
 
 def neutralize(smi):
@@ -89,6 +92,8 @@ def neutralize(smi):
 
 
 def wash_mol(smi):
+    from openbabel import openbabel
+
     ob_conversion = openbabel.OBConversion()
     ob_conversion.SetInAndOutFormats("smi", "can")
     ob_mol = openbabel.OBMol()

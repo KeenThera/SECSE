@@ -5,7 +5,7 @@ import os
 import sys
 
 def quote_ident(name: str) -> str:
-    """用 SQLite 规则安全转义标识符（表名/列名）。"""
+    """Quote a table or column identifier using SQLite escaping rules."""
     return '"' + name.replace('"', '""') + '"'
 
 def check_smarts(db_file: str, out_file: str):
@@ -14,30 +14,30 @@ def check_smarts(db_file: str, out_file: str):
 
     with open(out_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        # 写表头
+        # Write the header.
         writer.writerow(["Table", "Rule ID", "SMARTS", "Left Tags", "Right Tags", "Only Left", "Only Right"])
 
-        # 获取所有表和视图
+        # Get all tables and views.
         cur.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view');")
         tables = [r[0] for r in cur.fetchall()]
 
-        pattern = re.compile(r":(\d+)")  # 提取 :数字
+        pattern = re.compile(r":(\d+)")  # Extract atom map numbers.
 
         for t in tables:
             qt = quote_ident(t)
             try:
-                # 获取表结构
+                # Get the table columns.
                 cur.execute(f"PRAGMA table_info({qt});")
                 cols = [row[1] for row in cur.fetchall()]
                 lower_cols = [c.lower() for c in cols]
 
-                # 找 smarts 列
+                # Find the SMARTS column.
                 if "smarts" not in lower_cols:
                     continue
                 smarts_col = cols[lower_cols.index("smarts")]
                 qsmarts = quote_ident(smarts_col)
 
-                # 找 "Rule ID" 列（大小写不敏感）
+                # Find the Rule ID column, ignoring case.
                 id_col = None
                 for c in cols:
                     if c.lower().replace(" ", "") in ["ruleid", "rule_id"]:
@@ -47,7 +47,7 @@ def check_smarts(db_file: str, out_file: str):
                     continue
                 qid = quote_ident(id_col)
 
-                # 查询包含 >> 的行
+                # Select reaction SMARTS containing >>.
                 cur.execute(f"SELECT {qid}, {qsmarts} FROM {qt} WHERE {qsmarts} LIKE '%>>%';")
                 for rid, smarts in cur.fetchall():
                     if not smarts or ">>" not in smarts:
@@ -57,7 +57,7 @@ def check_smarts(db_file: str, out_file: str):
                     left_tags = set(pattern.findall(left))
                     right_tags = set(pattern.findall(right))
 
-                    # 左右标签集合不一致
+                    # Report atom map numbers that differ between sides.
                     if left_tags != right_tags:
                         only_left = sorted(left_tags - right_tags, key=int)
                         only_right = sorted(right_tags - left_tags, key=int)
@@ -79,20 +79,20 @@ def check_smarts(db_file: str, out_file: str):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("用法: python check_rules.py <input.db> <output.csv>")
+        print("Usage: python check_rules.py <input.db> <output.csv>")
         sys.exit(1)
 
     db_file = sys.argv[1]
     out_file = sys.argv[2]
 
     if not os.path.exists(db_file):
-        print(f"错误: 输入数据库文件不存在 -> {db_file}")
+        print(f"Error: input database does not exist: {db_file}")
         sys.exit(1)
 
     try:
         check_smarts(db_file, out_file)
-        print(f"✅ 检查完成，结果已保存到 {out_file}")
+        print(f"Check complete. Results saved to {out_file}")
     except Exception as e:
-        print(f"❌ 处理失败: {e}")
+        print(f"Error: {e}")
         sys.exit(1)
 

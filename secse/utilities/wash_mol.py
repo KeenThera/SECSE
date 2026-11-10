@@ -7,13 +7,13 @@
 """
 
 import random
-from openbabel import openbabel
-from openbabel import pybel
 from rdkit import Chem
 from loguru import logger
 
 
 def wash_mol(smi):
+    from openbabel import openbabel
+
     ob_conversion = openbabel.OBConversion()
     ob_conversion.SetInAndOutFormats("smi", "can")
     ob_mol = openbabel.OBMol()
@@ -72,6 +72,8 @@ def neutralize_atoms(mol):
 
 
 def charge_mol(smi):
+    from openbabel import pybel
+
     mol = pybel.readstring("smi", smi)
     mol.removeh()
     mol.OBMol.AddHydrogens(False, True, 7.4)

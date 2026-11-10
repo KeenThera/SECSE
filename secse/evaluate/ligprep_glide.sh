@@ -1,7 +1,8 @@
 #!/bin/bash
-mols=${1}
-workdir=${2}
-target=${3}
+set -euo pipefail
+mols=$(realpath -e -- "$1")
+workdir=$(realpath -- "$2")
+target=$(realpath -e -- "$3")
 generation=${4}
 docking_precision=${5}
 cpu_num=${6}
@@ -12,7 +13,9 @@ ligprep_in=ligprep_gen_$generation.inp
 glide_in=glide_gen_$generation.in
 glide_mae=ligprep_gen_$generation.maegz
 
-cd "$workdir" || exit
+schrodinger=$(realpath -e -- "${SCHRODINGER:?Set SCHRODINGER to the installation directory}")
+cd "$workdir"
+rm -f -- "glide_gen_${generation}_lib.sdf" "$glide_mae"
 
 # LigPreparation
 echo "Run ligprep ..."
@@ -30,7 +33,7 @@ IGNORE_CHIRALITIES  no
 NUM_STEREOISOMERS 8
 EOF
 
-"${SCHRODINGER}/ligprep" -inp $ligprep_in -HOST "localhost:$cpu_num" -TMPDIR "$workdir" -WAIT
+"$schrodinger/ligprep" -inp "$ligprep_in" -HOST "localhost:$cpu_num" -TMPDIR "$workdir" -WAIT
 
 # generate glide input file
 cat >"$glide_in" <<EOF
@@ -56,6 +59,6 @@ fi
 echo "Run glide ..."
 
 # Docking
-"${SCHRODINGER}/glide" "$glide_in" -OVERWRITE -adjust -HOST "localhost:$cpu_num" -TMPDIR "$workdir" -WAIT
+"$schrodinger/glide" "$glide_in" -OVERWRITE -adjust -HOST "localhost:$cpu_num" -TMPDIR "$workdir" -WAIT
 
 echo "Finshing docking of genration $generation !"

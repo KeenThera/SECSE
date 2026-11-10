@@ -5,12 +5,12 @@
 @file: substructure_filter.py 
 @time: 2021/02/08/14:13
 """
-import os
+from pathlib import Path
 import pandas as pd
 from rdkit import Chem
 from loguru import logger
 
-FILTER_FILE = os.path.join(os.getenv("SECSE"), "utilities", "Structure Filter_20211015_v1.12.xls")
+FILTER_FILE = Path(__file__).with_name("Structure Filter_20211015_v1.12.xls")
 
 
 class StructureFilter:

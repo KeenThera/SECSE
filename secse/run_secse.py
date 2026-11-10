@@ -7,110 +7,84 @@
 """
 import argparse
 import time
-import configparser
 from loguru import logger
-from datetime import datetime
 from pathlib import Path
 
-from grow_processes import Grow
-from report.grow_path import write_growth
+if __package__:
+    # The legacy standalone scripts import modules from the source directory.
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from utilities.config import docking_backend, read_config
 
 
 def setup_logger(project_code, work_directory):
-    # Ensure work_directory is a Path object for compatibility
-    if not isinstance(work_directory, Path):
-        work_directory = Path(work_directory)
-
-    # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    work_directory = Path(work_directory)
     log_file_path = work_directory / f'{project_code}.log'
     error_file_path = work_directory / f'{project_code}_error.log'
 
-    logger.add(log_file_path, rotation="10 MB", backtrace=True, diagnose=True, level="INFO", mode='a')
-    logger.add(error_file_path, rotation="5 MB", backtrace=True, diagnose=True, level="ERROR", mode='a')
+    logger.add(log_file_path, rotation="10 MB", backtrace=True, diagnose=False, level="INFO", mode='a')
+    logger.add(error_file_path, rotation="5 MB", backtrace=True, diagnose=False, level="ERROR", mode='a')
     return logger
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="SECSE")
-
-    parser.add_argument("--config", help="path of config file", default=False)
-    args = parser.parse_args()
+    parser.add_argument("--config", help="path of config file", required=True)
+    args = parser.parse_args(argv)
+    started = time.monotonic()
 
     try:
-        # config file given
-        config = configparser.ConfigParser()
-        config.read(args.config)
-        project_code = config.get("general", "project_code")
-        workdir = config.get("general", "workdir")
+        config_path = Path(args.config).resolve()
+        config = read_config(config_path)
+        general = config["general"]
+        docking = config["docking"]
+        prediction = config["prediction"]
+        backend = docking_backend(docking.get("docking_program", "vina"))
+        num_gen = int(general["num_gen"])
+        start_gen = general.getint("start_gen", 0)
+        dl_mode = prediction.getint("mode", 0)
+        num_per_gen = int(general["num_per_gen"])
+        cpu_num = int(general["cpu"])
+        gpu_num = general.getint("gpu", 1)
+        if num_gen < 0 or start_gen < 0 or num_per_gen < 1 or cpu_num < 0:
+            raise ValueError("Check num_gen, start_gen, num_per_gen and cpu in [general]")
+        if general.getint("seed_per_gen", 1000) < 1 or dl_mode not in (0, 1, 2):
+            raise ValueError("seed_per_gen must be positive and prediction mode must be 0, 1 or 2")
 
+        workdir = str(Path(general["workdir"]).resolve())
+        project_code = general["project_code"]
+        fragments = general.get("fragments", "")
+        receptor = str(Path(docking["target"]).resolve())
+        if not Path(receptor).is_file():
+            raise FileNotFoundError(f"Docking target: {receptor}")
+        if start_gen == 0 and (not fragments or not Path(fragments).is_file()):
+            raise FileNotFoundError(f"Input fragments: {fragments!r}")
+        box = {}
+        if backend in ("vina", "unidock"):
+            box = {axis: float(docking[axis]) for axis in ("x", "y", "z")}
+            box.update({f"box_size_{axis}": docking.getfloat(f"box_size_{axis}", 20) for axis in ("x", "y", "z")})
+
+        from grow_processes import Grow
+
+        workflow = Grow(
+            num_gen, str(Path(fragments).resolve()) if fragments else "", workdir,
+            num_per_gen, backend, receptor, start_gen, dl_mode, str(config_path),
+            cpu_num=cpu_num, gpu_num=gpu_num, rule_db=general.get("rule_db", "0"),
+            project_code=project_code, **box,
+        )
         setup_logger(project_code, workdir)
-
-        num_gen = config.getint("general", "num_gen")
-        mols_smi = config.get("general", "fragments")
-
-        num_per_gen = config.getint("general", "num_per_gen")
-        start_gen = config.getint("general", "start_gen")
-        docking_program = config.get("docking", "docking_program")
-        cpu_num = config.getint("general", "cpu")
-        gpu_num = config.getint("general", "gpu")
-        rule_db = config.get("general", "rule_db")
-
-        receptor = config.get("docking", "target")
-        dl_mode = config.getint("prediction", "mode")
-        if "vina" in docking_program.lower() or "unidock" in docking_program.lower():
-            x = config.getfloat("docking", "x")
-            y = config.getfloat("docking", "y")
-            z = config.getfloat("docking", "z")
-            box_size_x = config.getfloat("docking", "box_size_x")
-            box_size_y = config.getfloat("docking", "box_size_y")
-            box_size_z = config.getfloat("docking", "box_size_z")
-
-
-    except Exception as e:
-        logger.error("Please check your input arguments.")
-        return None
-
-    if "vina" in docking_program.lower():
-        workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
-                        args.config, cpu_num=cpu_num, rule_db=rule_db, project_code=project_code, x=x, y=y, z=z,
-                        box_size_x=box_size_x, box_size_y=box_size_y, box_size_z=box_size_z)
-    elif "glide" in docking_program.lower():
-        workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
-                        args.config, cpu_num=cpu_num, rule_db=rule_db, project_code=project_code)
-    elif "autodock-gpu" in docking_program.lower():
-        workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
-                        args.config, cpu_num=cpu_num, gpu_num=gpu_num, rule_db=rule_db, project_code=project_code)
-    elif "unidock" in docking_program.lower():
-        workflow = Grow(num_gen, mols_smi, workdir, num_per_gen, docking_program, receptor, start_gen, dl_mode,
-                        args.config, cpu_num=cpu_num, rule_db=rule_db, project_code=project_code, x=x, y=y, z=z,
-                        box_size_x=box_size_x, box_size_y=box_size_y, box_size_z=box_size_z)
-    else:
-        logger.error("Please check your input docking program argument.")
-        return None
-    workflow.grow()
-
-
-if __name__ == '__main__':
-    time1 = time.time()
-    logger.info(
-        "\n"
-        + "*" * 88 + "\n"
-                     "      ____    _____    ____   ____    _____ \n"
-                     "     / ___|  | ____|  / ___| / ___|  | ____|\n"
-                     "     \\___ \\  |  _|   | |     \\___ \\  |  _|  \n"
-                     "      ___) | | |___  | |___   ___) | | |___ \n"
-                     "     |____/  |_____|  \\____| |____/  |_____| v1.3\n"
-        + "*" * 88
-    )
-
-    try:
-        main()
-    except SystemExit as err:
-        logger.info(f"Program exited with status: {err}")
+        workflow.grow()
     except KeyboardInterrupt:
         logger.info("Program interrupted by user")
-    except Exception as e:
-        logger.error("An unexpected error occurred", exc_info=True)
+        return 130
+    except Exception as error:
+        logger.opt(exception=True).error("SECSE failed: {}", error)
+        return 1
+    finally:
+        logger.info("Time consumption (total): {:.2f} hours", (time.monotonic() - started) / 3600)
+    return 0
 
-    time2 = time.time()
-    logger.info("Time consumption (total): {} hours".format(round((time2 - time1) / 3600, 2)))
+
+if __name__ == "__main__":
+    raise SystemExit(main())
